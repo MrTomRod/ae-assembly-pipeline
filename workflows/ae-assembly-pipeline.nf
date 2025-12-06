@@ -14,7 +14,7 @@ include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pi
 //
 // MODULE: Installed directly from nf-core/modules
 //
-include { FLYE as FLYE_LJA } from '../modules/nf-core/flye/main'
+include { FLYE } from '../modules/nf-core/flye/main'
 
 //
 // MODULE: Local modules
@@ -30,9 +30,16 @@ include { LJA } from '../modules/local/lja/main'
 
 def getGenomeSize(fasta) {
     def size = 0
-    fasta.eachLine { line ->
-        if (!line.startsWith('>')) {
-            size += line.strip().length()
+    def is_gzipped = fasta.getName().endsWith('.gz')
+    def inputStream = is_gzipped ? 
+        new java.util.zip.GZIPInputStream(new FileInputStream(fasta.toFile())) : 
+        new FileInputStream(fasta.toFile())
+        
+    inputStream.withReader { reader ->
+        reader.eachLine { line ->
+            if (!line.startsWith('>')) {
+                size += line.strip().length()
+            }
         }
     }
     return size
@@ -74,11 +81,11 @@ workflow AE_ASSEMBLY_PIPELINE {
     //
     // PROCESS: Run Flye (Example)
     //
-    // FLYE_LJA (
+    // FLYE (
     //    ch_samplesheet,
     //    "--pacbio-hifi"
     // )
-    // ch_versions = ch_versions.mix(FLYE_LJA.out.versions)
+    // ch_versions = ch_versions.mix(FLYE.out.versions)
 
     //
     // Collate and save software versions

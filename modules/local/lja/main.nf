@@ -1,14 +1,12 @@
 process LJA {
     tag "$meta.id"
     label 'process_medium'
-    cpus 10
-    memory 15.GB
-    conda "${moduleDir}/environment.yml"
+    // conda "${moduleDir}/environment.yml"
     container "docker://docker.io/troder/lja"
 
     input:
     tuple val(meta), path(reads)
-//    val ploidy
+    // val ploidy
 
     output:
     // tuple val(meta), path("*.fasta"),    emit: fastaraw
