@@ -13,7 +13,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { AE-ASSEMBLY-PIPELINE  } from './workflows/ae-assembly-pipeline'
+include { AE_ASSEMBLY_PIPELINE  } from './workflows/ae-assembly-pipeline'
 include { PIPELINE_INITIALISATION } from './subworkflows/local/utils_nfcore_ae-assembly-pipeline_pipeline'
 include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_ae-assembly-pipeline_pipeline'
 /*
@@ -25,7 +25,7 @@ include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_ae-a
 //
 // WORKFLOW: Run main analysis pipeline depending on type of input
 //
-workflow UNIBE_ABRINCA_AE-ASSEMBLY-PIPELINE {
+workflow UNIBE_ABRINCA_AE_ASSEMBLY_PIPELINE {
 
     take:
     samplesheet // channel: samplesheet read in from --input
@@ -35,7 +35,7 @@ workflow UNIBE_ABRINCA_AE-ASSEMBLY-PIPELINE {
     //
     // WORKFLOW: Run pipeline
     //
-    AE-ASSEMBLY-PIPELINE (
+    AE_ASSEMBLY_PIPELINE (
         samplesheet
     )
 }
@@ -63,7 +63,7 @@ workflow {
     //
     // WORKFLOW: Run main workflow
     //
-    UNIBE_ABRINCA_AE-ASSEMBLY-PIPELINE (
+    UNIBE_ABRINCA_AE_ASSEMBLY_PIPELINE (
         PIPELINE_INITIALISATION.out.samplesheet
     )
     //

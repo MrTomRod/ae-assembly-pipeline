@@ -7,17 +7,78 @@ include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pi
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    IMPORT ADAPTERS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+
+//
+// MODULE: Installed directly from nf-core/modules
+//
+include { FLYE as FLYE_LJA } from '../modules/nf-core/flye/main'
+
+//
+// MODULE: Local modules
+//
+include { LJA } from '../modules/local/lja/main'
+
+
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    FUNCTIONS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+
+def getGenomeSize(fasta) {
+    def size = 0
+    fasta.eachLine { line ->
+        if (!line.startsWith('>')) {
+            size += line.strip().length()
+        }
+    }
+    return size
+}
+
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-workflow AE-ASSEMBLY-PIPELINE {
+workflow AE_ASSEMBLY_PIPELINE {
 
     take:
     ch_samplesheet // channel: samplesheet read in from --input
+
     main:
 
-    ch_versions = channel.empty()
+    ch_versions = Channel.empty()
+
+    //
+    // PROCESS: Run LJA
+    //
+    LJA (
+        ch_samplesheet
+    )
+    
+    //
+    // LOGIC: Calculate genome size from assembly
+    //
+    LJA.out.fasta
+        .map { meta, fasta ->
+            def size = getGenomeSize(fasta)
+            log.info "Sample: ${meta.id} | Estimated Genome Size: ${size} bp"
+            return [ meta, size ]
+        }
+        .set { ch_genome_size }
+
+    //
+    // PROCESS: Run Flye (Example)
+    //
+    // FLYE_LJA (
+    //    ch_samplesheet,
+    //    "--pacbio-hifi"
+    // )
+    // ch_versions = ch_versions.mix(FLYE_LJA.out.versions)
 
     //
     // Collate and save software versions
