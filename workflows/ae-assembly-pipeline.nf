@@ -60,16 +60,8 @@ workflow AE_ASSEMBLY_PIPELINE {
 
     ch_versions = Channel.empty()
 
-    //
-    // PROCESS: Run LJA
-    //
-    LJA (
-        ch_samplesheet
-    )
-    
-    //
-    // LOGIC: Calculate genome size from assembly
-    //
+    LJA        ( ch_samplesheet )
+
     LJA.out.fasta
         .map { meta, fasta ->
             def size = getGenomeSize(fasta)
@@ -86,6 +78,26 @@ workflow AE_ASSEMBLY_PIPELINE {
     //    "--pacbio-hifi"
     // )
     // ch_versions = ch_versions.mix(FLYE.out.versions)
+
+    // LOGIC: Link Reads directly to input files
+    //
+    ch_samplesheet
+        .subscribe { meta, reads ->
+            def outDir = file("${params.outdir}/${meta.id}/0_reads")
+            outDir.mkdirs()
+            def readList = reads instanceof List ? reads : [reads]
+            readList.each { read ->
+                def target = outDir.resolve(read.name)
+                try {
+                    // Force overwrite of symlink if it exists
+                    if (target.exists()) target.delete()
+                    def relPath = outDir.relativize(read.toAbsolutePath())
+                    java.nio.file.Files.createSymbolicLink(target, relPath)
+                } catch (Exception e) {
+                    log.warn "Could not create symlink for ${read}: ${e.message}"
+                }
+            }
+        }
 
     //
     // Collate and save software versions
