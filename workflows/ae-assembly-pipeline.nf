@@ -19,7 +19,8 @@ include { FLYE } from '../modules/nf-core/flye/main'
 //
 // MODULE: Local modules
 //
-include { LJA } from '../modules/local/lja/main'
+include { LJA }                  from '../modules/local/lja/main'
+include { AUTOCYCLER_SUBSAMPLE } from '../modules/local/autocycler/subsample/main'
 
 
 /*
@@ -60,25 +61,7 @@ workflow AE_ASSEMBLY_PIPELINE {
 
     ch_versions = Channel.empty()
 
-    LJA        ( ch_samplesheet )
-
-    LJA.out.fasta
-        .map { meta, fasta ->
-            def size = getGenomeSize(fasta)
-            log.info "Sample: ${meta.id} | Estimated Genome Size: ${size} bp"
-            return [ meta, size ]
-        }
-        .set { ch_genome_size }
-
     //
-    // PROCESS: Run Flye (Example)
-    //
-    // FLYE (
-    //    ch_samplesheet,
-    //    "--pacbio-hifi"
-    // )
-    // ch_versions = ch_versions.mix(FLYE.out.versions)
-
     // LOGIC: Link Reads directly to input files
     //
     ch_samplesheet
@@ -98,6 +81,40 @@ workflow AE_ASSEMBLY_PIPELINE {
                 }
             }
         }
+    
+    LJA        ( ch_samplesheet )
+
+    //
+    // LOGIC: Calculate genome size from assembly
+    //
+    LJA.out.fasta
+        .map { meta, fasta ->
+            def size = getGenomeSize(fasta)
+            log.info "Sample: ${meta.id} | Estimated Genome Size: ${size} bp"
+            return [ meta, size ]
+        }
+        .set { ch_genome_size }
+
+    //
+    // PROCESS: Autocycler Subsample
+    //
+    ch_samplesheet
+        .join(ch_genome_size)
+        .set { ch_autocycler_input }
+
+    AUTOCYCLER_SUBSAMPLE (
+        ch_autocycler_input
+    )
+    ch_versions = ch_versions.mix(AUTOCYCLER_SUBSAMPLE.out.versions)
+
+    //
+    // PROCESS: Run Flye (Example)
+    //
+    // FLYE (
+    //    ch_samplesheet,
+    //    "--pacbio-hifi"
+    // )
+    // ch_versions = ch_versions.mix(FLYE.out.versions)
 
     //
     // Collate and save software versions
