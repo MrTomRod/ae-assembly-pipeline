@@ -19,8 +19,10 @@ include { FLYE } from '../modules/nf-core/flye/main'
 //
 // MODULE: Local modules
 //
+include { LJA as LJA_GS }        from '../modules/local/lja/main'
 include { LJA }                  from '../modules/local/lja/main'
 include { AUTOCYCLER_SUBSAMPLE } from '../modules/local/autocycler/subsample/main'
+include { PBIPA }                from '../modules/local/pbipa/main'
 
 
 /*
@@ -82,12 +84,12 @@ workflow AE_ASSEMBLY_PIPELINE {
             }
         }
     
-    LJA        ( ch_samplesheet )
+    LJA_GS ( ch_samplesheet )
 
     //
     // LOGIC: Calculate genome size from assembly
     //
-    LJA.out.fasta
+    LJA_GS.out.fasta
         .map { meta, fasta ->
             def size = getGenomeSize(fasta)
             log.info "Sample: ${meta.id} | Estimated Genome Size: ${size} bp"
@@ -100,6 +102,11 @@ workflow AE_ASSEMBLY_PIPELINE {
     //
     ch_samplesheet
         .join(ch_genome_size)
+        .map { meta, reads, size ->
+            def new_meta = meta.clone()
+            new_meta.genome_size = size
+            [ new_meta, reads, size ]
+        }
         .set { ch_autocycler_input }
 
     AUTOCYCLER_SUBSAMPLE (
@@ -108,13 +115,39 @@ workflow AE_ASSEMBLY_PIPELINE {
     ch_versions = ch_versions.mix(AUTOCYCLER_SUBSAMPLE.out.versions)
 
     //
-    // PROCESS: Run Flye (Example)
+    // PROCESS: Run LJA on subsamples
+    //
+    AUTOCYCLER_SUBSAMPLE.out.fastq
+        .transpose()
+        .map { meta, reads ->
+            def meta_clone = meta.clone()
+            // Strip 'sample_' prefix if present to get clean ID
+            meta_clone.subset_id = reads.baseName.tokenize('.')[0].minus('sample_')
+            [ meta_clone, reads ]
+        }
+        .set { ch_lja_input }
+    
+    LJA (
+        ch_lja_input
+    )
+    ch_versions = ch_versions.mix(LJA.out.versions)
+
+    //
+    // PROCESS: Run Flye
     //
     // FLYE (
-    //    ch_samplesheet,
+    //    ch_lja_input,
     //    "--pacbio-hifi"
     // )
     // ch_versions = ch_versions.mix(FLYE.out.versions)
+
+    //
+    // PROCESS: Run PBIPA
+    //
+    PBIPA (
+       ch_lja_input
+    )
+    ch_versions = ch_versions.mix(PBIPA.out.versions)
 
     //
     // Collate and save software versions
