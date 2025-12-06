@@ -1,0 +1,101 @@
+repository_type: pipeline
+
+nf_core_version: 3.5.1
+
+lint:
+  files_unchanged:
+    - .github/CONTRIBUTING.md
+    - CODE_OF_CONDUCT.md
+    - assets/nf-core-ae-assembly-pipeline_logo_light.png
+    - docs/images/nf-core-ae-assembly-pipeline_logo_light.png
+    - docs/images/nf-core-ae-assembly-pipeline_logo_dark.png
+    - .github/ISSUE_TEMPLATE/bug_report.yml
+    - .github/CONTRIBUTING.md
+    - .github/PULL_REQUEST_TEMPLATE.md
+    - assets/email_template.txt
+    - docs/README.md
+    - .prettierignore
+    - LICENSE
+    - .github/CONTRIBUTING.md
+    - assets/sendmail_template.txt
+    - .prettierignore
+    - .prettierignore
+    - .prettierignore
+    - .github/CONTRIBUTING.md
+    - .github/PULL_REQUEST_TEMPLATE.md
+  nextflow_config: false
+  nf_test_content: false
+  multiqc_config: false
+  files_exist:
+    - CODE_OF_CONDUCT.md
+    - assets/nf-core-ae-assembly-pipeline_logo_light.png
+    - docs/images/nf-core-ae-assembly-pipeline_logo_light.png
+    - docs/images/nf-core-ae-assembly-pipeline_logo_dark.png
+    - .github/ISSUE_TEMPLATE/config.yml
+    - .github/workflows/awstest.yml
+    - .github/workflows/awsfulltest.yml
+    - LICENSE
+    - CITATIONS.md
+    - nextflow_schema.json
+    - assets/multiqc_config.yml
+    - .github/workflows/nf-test.yml
+    - .github/actions/get-shards/action.yml
+    - .github/actions/nf-test/action.yml
+    - nf-test.config
+    - tests/default.nf.test
+    - assets/email_template.html
+    - assets/sendmail_template.txt
+    - assets/email_template.txt
+    - .github/workflows/branch.yml
+    - .github/workflows/nf-test.yml
+    - .github/actions/get-shards/action.yml
+    - .github/actions/nf-test/action.yml
+    - .github/workflows/linting_comment.yml
+    - .github/workflows/linting.yml
+    - docs/output.md
+    - docs/README.md
+    - docs/usage.md
+    - conf/igenomes.config
+    - conf/igenomes_ignored.config
+    - .prettierignore
+    - .prettierrc.yml
+    - CHANGELOG.md
+    - conf/test.config
+    - conf/test_full.config
+    - .github/workflows/nf-test.yml
+    - .github/actions/get-shards/action.yml
+    - .github/actions/nf-test/action.yml
+  schema_lint: false
+  schema_params: false
+  schema_description: false
+
+template:
+  org: UniBE_Abrinca
+  name: ae-assembly-pipeline
+  description: Bacterial genome assembly pipeline for Autocycler Express
+  author: Thomas Roder
+  version: 0.0.0dev
+  force: true
+  outdir: .
+  skip_features:
+    - changelog
+    - license
+    - ci
+    - test_config
+    - nf-test
+    - igenomes
+    - multiqc
+    - fastqc
+    - nf_schema
+    - seqera_platform
+    - gpu
+    - codespaces
+    - vscode
+    - code_linters
+    - citations
+    - documentation
+    - rocrate
+    - email
+    - adaptivecard
+    - slackreport
+  is_nfcore: false
