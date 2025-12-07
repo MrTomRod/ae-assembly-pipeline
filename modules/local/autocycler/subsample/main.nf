@@ -26,7 +26,8 @@ process AUTOCYCLER_SUBSAMPLE {
         --out_dir . \\
         --genome_size $genome_size \\
         --count ${params.autocycler_subsample_count} \\
-        --seed ${params.autocycler_subsample_seed}
+        --seed ${params.autocycler_subsample_seed} \\
+        --min_read_depth ${params.autocycler_subsample_min_read_depth}
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

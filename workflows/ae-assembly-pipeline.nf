@@ -23,6 +23,7 @@ include { LJA as LJA_GS }        from '../modules/local/lja/main'
 include { LJA }                  from '../modules/local/lja/main'
 include { AUTOCYCLER_SUBSAMPLE } from '../modules/local/autocycler/subsample/main'
 include { PBIPA }                from '../modules/local/pbipa/main'
+include { CANU }                 from '../modules/nf-core/canu/main'
 
 
 /*
@@ -135,11 +136,11 @@ workflow AE_ASSEMBLY_PIPELINE {
     //
     // PROCESS: Run Flye
     //
-    // FLYE (
-    //    ch_lja_input,
-    //    "--pacbio-hifi"
-    // )
-    // ch_versions = ch_versions.mix(FLYE.out.versions)
+    FLYE (
+       ch_lja_input,
+       "--pacbio-hifi"
+    )
+    ch_versions = ch_versions.mix(FLYE.out.versions)
 
     //
     // PROCESS: Run PBIPA
@@ -148,6 +149,16 @@ workflow AE_ASSEMBLY_PIPELINE {
        ch_lja_input
     )
     ch_versions = ch_versions.mix(PBIPA.out.versions)
+
+    //
+    // PROCESS: Run CANU
+    //
+    CANU (
+        ch_lja_input,
+        "-pacbio-hifi",
+        ch_lja_input.map { it[0].genome_size }
+    )
+    ch_versions = ch_versions.mix(CANU.out.versions)
 
     //
     // Collate and save software versions
