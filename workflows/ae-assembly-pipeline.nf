@@ -29,6 +29,7 @@ include { CANU }                  from '../modules/nf-core/canu/main'
 include { MYLOASM }               from '../modules/nf-core/myloasm/main'
 include { HIFIASM }               from '../modules/nf-core/hifiasm/main'
 include { MINIPOLISH }            from '../modules/local/minipolish/main'
+include { RAVEN }                 from '../modules/nf-core/raven/main'
 
 
 /*
@@ -212,6 +213,12 @@ workflow AE_ASSEMBLY_PIPELINE {
     )
     ch_versions = ch_versions.mix(MINIPOLISH.out.versions)
 
+    // RAVEN
+    RAVEN (
+        ch_subreads_input
+    )
+    ch_versions = ch_versions.mix(RAVEN.out.versions)
+
 
     //
     // Calculate depth using mapquik
@@ -223,6 +230,7 @@ workflow AE_ASSEMBLY_PIPELINE {
         .mix(MYLOASM.out.contigs_gz)
         .mix(HIFIASM.out.fasta)
         .mix(MINIPOLISH.out.fasta)
+        .mix(RAVEN.out.fasta)
 
     ch_assemblies
         .combine(ch_subreads_input, by: 0) // [ meta, assembly, reads ]
