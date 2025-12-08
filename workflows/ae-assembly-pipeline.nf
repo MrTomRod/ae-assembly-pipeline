@@ -22,9 +22,10 @@ include { FLYE } from '../modules/nf-core/flye/main'
 include { LJA as LJA_GS }        from '../modules/local/lja/main'
 include { LJA }                  from '../modules/local/lja/main'
 include { AUTOCYCLER_SUBSAMPLE } from '../modules/local/autocycler/subsample/main'
+include { MAPQUIK }              from '../modules/local/mapquik/main'
 include { PBIPA }                from '../modules/local/pbipa/main'
 include { CANU }                 from '../modules/nf-core/canu/main'
-
+include { MYLOASM }              from '../modules/nf-core/myloasm/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -159,6 +160,33 @@ workflow AE_ASSEMBLY_PIPELINE {
         ch_lja_input.map { it[0].genome_size }
     )
     ch_versions = ch_versions.mix(CANU.out.versions)
+
+    //
+    // PROCESS: Run Mapquik
+    //
+    ch_assemblies = LJA.out.fasta
+        .mix(FLYE.out.fasta)
+        .mix(PBIPA.out.fasta)
+        .mix(CANU.out.assembly)
+
+    ch_assemblies
+        .combine(ch_lja_input, by: 0) // [ meta, assembly, reads ]
+        .map { meta, assembly, reads ->
+            [ meta.id, meta, reads, assembly ]
+        }
+        .combine(
+            AUTOCYCLER_SUBSAMPLE.out.yaml.map { meta, yaml -> [ meta.id, yaml ] },
+            by: 0
+        ) // [ id, meta, reads, assembly, yaml ]
+        .map { id, meta, reads, assembly, yaml ->
+            [ meta, reads, assembly, yaml ]
+        }
+        .set { ch_mapquik_input }
+
+    MAPQUIK (
+        ch_mapquik_input
+    )
+    ch_versions = ch_versions.mix(MAPQUIK.out.versions)
 
     //
     // Collate and save software versions

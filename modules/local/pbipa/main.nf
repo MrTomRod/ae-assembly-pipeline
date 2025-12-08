@@ -8,7 +8,7 @@ process PBIPA {
     tuple val(meta), path(reads)
 
     output:
-    tuple val(meta), path("*.fasta"), emit: fasta
+    tuple val(meta), path("*.fasta.gz"), emit: fasta
     path "versions.yml"             , emit: versions
 
     when:
@@ -116,6 +116,8 @@ process PBIPA {
             print seq
         }
     }' run_plasmid/19-final/final.p_ctg.fasta >> ${prefix}.fasta
+
+    gzip -c ${prefix}.fasta > ${prefix}.fasta.gz
 
     echo ">>> Pipeline Complete. Output: ${prefix}.fasta"
 
