@@ -7,14 +7,13 @@ process MAPQUIK {
     tuple val(meta), path(reads), path(assembly), path(subsample_yaml)
 
     output:
-    tuple val(meta), path("*.paf"), emit: paf
-    tuple val(meta), path("*.depth"), emit: depth
-    path "versions.yml"           , emit: versions
+    tuple val(meta), path("*.paf"),     emit: paf
+    tuple val(meta), path("*.depth"),   emit: depth
+    path "versions.yml",                emit: versions
 
     script:
     def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    def assembly_base = assembly.simpleName
+    def prefix = task.ext.prefix ?: "${assembly.simpleName}"
     def VERSION = '1.0' // WARN: Version information not provided by tool on CLI.
 
     """
@@ -28,7 +27,7 @@ process MAPQUIK {
         --yaml $subsample_yaml \\
         --fasta $assembly \\
         --paf ${prefix}.paf \\
-        -o ${assembly_base}.depth
+        -o ${prefix}.depth
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

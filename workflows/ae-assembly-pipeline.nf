@@ -19,13 +19,15 @@ include { FLYE } from '../modules/nf-core/flye/main'
 //
 // MODULE: Local modules
 //
-include { LJA as LJA_GS }        from '../modules/local/lja/main'
-include { LJA }                  from '../modules/local/lja/main'
-include { AUTOCYCLER_SUBSAMPLE } from '../modules/local/autocycler/subsample/main'
-include { MAPQUIK }              from '../modules/local/mapquik/main'
-include { PBIPA }                from '../modules/local/pbipa/main'
-include { CANU }                 from '../modules/nf-core/canu/main'
-include { MYLOASM }              from '../modules/nf-core/myloasm/main'
+include { LJA as LJA_GS }         from '../modules/local/lja/main'
+include { MAPQUIK as MAPQUIK_GS } from '../modules/local/mapquik/main'
+include { LJA }                   from '../modules/local/lja/main'
+include { AUTOCYCLER_SUBSAMPLE }  from '../modules/local/autocycler/subsample/main'
+include { MAPQUIK }               from '../modules/local/mapquik/main'
+include { PBIPA }                 from '../modules/local/pbipa/main'
+include { CANU }                  from '../modules/nf-core/canu/main'
+include { MYLOASM }               from '../modules/nf-core/myloasm/main'
+include { HIFIASM }               from '../modules/nf-core/hifiasm/main'
 
 
 /*
@@ -67,9 +69,21 @@ workflow AE_ASSEMBLY_PIPELINE {
     ch_versions = Channel.empty()
 
     //
-    // LOGIC: Link Reads directly to input files
+    // LOGIC: Fork samplesheet for multiple consumers
     //
     ch_samplesheet
+        .multiMap { meta, reads ->
+            ch_symlink:     [ meta, reads ]
+            ch_genome_size: [ meta, reads ]
+            ch_autocycler:  [ meta, reads ]
+            ch_depth:       [ meta, reads ]
+        }
+        .set { channels }
+
+    //
+    // LOGIC: Link Reads directly to input files
+    //
+    channels.ch_symlink
         .subscribe { meta, reads ->
             def outDir = file("${params.outdir}/${meta.id}/0_reads")
             outDir.mkdirs()
@@ -87,7 +101,7 @@ workflow AE_ASSEMBLY_PIPELINE {
             }
         }
     
-    LJA_GS ( ch_samplesheet )
+    LJA_GS ( channels.ch_genome_size )
 
     //
     // LOGIC: Calculate genome size from assembly
@@ -103,7 +117,7 @@ workflow AE_ASSEMBLY_PIPELINE {
     //
     // PROCESS: Autocycler Subsample
     //
-    ch_samplesheet
+    channels.ch_autocycler
         .join(ch_genome_size)
         .map { meta, reads, size ->
             def new_meta = meta.clone()
@@ -118,8 +132,22 @@ workflow AE_ASSEMBLY_PIPELINE {
     ch_versions = ch_versions.mix(AUTOCYCLER_SUBSAMPLE.out.versions)
 
     //
-    // PROCESS: Run LJA on subsamples
+    // For the initial LJA assembly: calculate coverage per contig
     //
+    ch_lja_depth = LJA_GS.out.fasta
+        .map { meta, fasta -> [ meta.id, fasta ] }
+        .join( channels.ch_depth.map { meta, reads -> [ meta.id, meta, reads ] } )
+        .join( AUTOCYCLER_SUBSAMPLE.out.yaml.map { meta, yaml -> [ meta.id, yaml ] } )
+        .map { id, fasta, meta, reads, yaml ->
+            [ meta, reads, fasta, yaml ]
+        }
+    MAPQUIK_GS( ch_lja_depth )
+    // ch_versions = ch_versions.mix(MAPQUIK_GS.out.versions)
+    
+    //
+    // RUN ASSEMBLERS ON SUBSAMPLES
+    //
+
     AUTOCYCLER_SUBSAMPLE.out.fastq
         .transpose()
         .map { meta, reads ->
@@ -128,59 +156,65 @@ workflow AE_ASSEMBLY_PIPELINE {
             meta_clone.subset_id = reads.baseName.tokenize('.')[0].minus('sample_')
             [ meta_clone, reads ]
         }
-        .set { ch_lja_input }
+        .set { ch_subreads_input }
     
+    // LJA
     LJA (
-        ch_lja_input
+        ch_subreads_input
     )
     ch_versions = ch_versions.mix(LJA.out.versions)
 
-    //
-    // PROCESS: Run Flye
-    //
+    // Flye
     FLYE (
-       ch_lja_input,
+       ch_subreads_input,
        "--pacbio-hifi"
     )
     ch_versions = ch_versions.mix(FLYE.out.versions)
 
-    //
-    // PROCESS: Run PBIPA
-    //
+    // PBIPA
     PBIPA (
-       ch_lja_input
+       ch_subreads_input
     )
     ch_versions = ch_versions.mix(PBIPA.out.versions)
 
-    //
-    // PROCESS: Run CANU
-    //
+    // CANU
     CANU (
-        ch_lja_input,
+        ch_subreads_input,
         "-pacbio-hifi",
-        ch_lja_input.map { it[0].genome_size }
+        ch_subreads_input.map { it[0].genome_size }
     )
     ch_versions = ch_versions.mix(CANU.out.versions)
 
-    //
-    // PROCESS: Run MYLOASM
-    //
+    // Hifiasm
+    ch_hifiasm_input = ch_subreads_input
+        .map { meta, reads ->
+            [ meta, reads, [] ]
+        }
+    HIFIASM (
+        ch_hifiasm_input,
+        ch_hifiasm_input.map { meta, reads, ul -> [ meta, [], [] ] }, // paternal/maternal dump
+        ch_hifiasm_input.map { meta, reads, ul -> [ meta, [], [] ] }, // hic
+        ch_hifiasm_input.map { meta, reads, ul -> [ meta, [] ] }      // bin files
+    )
+    ch_versions = ch_versions.mix(HIFIASM.out.versions)
+
+    // MYLOASM
     MYLOASM (
-        ch_lja_input
+        ch_subreads_input
     )
     ch_versions = ch_versions.mix(MYLOASM.out.versions)
 
-    //
-    // PROCESS: Run Mapquik
-    //
+
+
     ch_assemblies = LJA.out.fasta
         .mix(FLYE.out.fasta)
         .mix(PBIPA.out.fasta)
         .mix(CANU.out.assembly)
         .mix(MYLOASM.out.contigs_gz)
+        .mix(HIFIASM.out.fasta)
 
     ch_assemblies
-        .combine(ch_lja_input, by: 0) // [ meta, assembly, reads ]
+        .combine(ch_subreads_input, by: 0) // [ meta, assembly, reads ]
         .map { meta, assembly, reads ->
             [ meta.id, meta, reads, assembly ]
         }
@@ -197,6 +231,7 @@ workflow AE_ASSEMBLY_PIPELINE {
         ch_mapquik_input
     )
     ch_versions = ch_versions.mix(MAPQUIK.out.versions)
+
 
     //
     // Collate and save software versions
