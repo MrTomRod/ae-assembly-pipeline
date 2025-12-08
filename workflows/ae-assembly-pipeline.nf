@@ -27,6 +27,7 @@ include { PBIPA }                from '../modules/local/pbipa/main'
 include { CANU }                 from '../modules/nf-core/canu/main'
 include { MYLOASM }              from '../modules/nf-core/myloasm/main'
 
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     FUNCTIONS
@@ -162,12 +163,21 @@ workflow AE_ASSEMBLY_PIPELINE {
     ch_versions = ch_versions.mix(CANU.out.versions)
 
     //
+    // PROCESS: Run MYLOASM
+    //
+    MYLOASM (
+        ch_lja_input
+    )
+    ch_versions = ch_versions.mix(MYLOASM.out.versions)
+
+    //
     // PROCESS: Run Mapquik
     //
     ch_assemblies = LJA.out.fasta
         .mix(FLYE.out.fasta)
         .mix(PBIPA.out.fasta)
         .mix(CANU.out.assembly)
+        .mix(MYLOASM.out.contigs_gz)
 
     ch_assemblies
         .combine(ch_lja_input, by: 0) // [ meta, assembly, reads ]
