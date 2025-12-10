@@ -30,6 +30,7 @@ include { MYLOASM }               from '../modules/nf-core/myloasm/main'
 include { HIFIASM }               from '../modules/nf-core/hifiasm/main'
 include { MINIPOLISH }            from '../modules/local/minipolish/main'
 include { RAVEN }                 from '../modules/nf-core/raven/main'
+include { PLASSEMBLER }           from '../modules/local/plassembler/main'
 
 
 /*
@@ -219,6 +220,12 @@ workflow AE_ASSEMBLY_PIPELINE {
     )
     ch_versions = ch_versions.mix(RAVEN.out.versions)
 
+    // PLASSEMBLER
+    PLASSEMBLER (
+        ch_subreads_input
+    )
+    ch_versions = ch_versions.mix(PLASSEMBLER.out.versions)
+
 
     //
     // Calculate depth using mapquik
@@ -231,6 +238,8 @@ workflow AE_ASSEMBLY_PIPELINE {
         .mix(HIFIASM.out.fasta)
         .mix(MINIPOLISH.out.fasta)
         .mix(RAVEN.out.fasta)
+        .mix(PLASSEMBLER.out.plasmids)
+        .mix(PLASSEMBLER.out.flye_fasta)
 
     ch_assemblies
         .combine(ch_subreads_input, by: 0) // [ meta, assembly, reads ]
