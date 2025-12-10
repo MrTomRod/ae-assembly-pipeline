@@ -19,7 +19,7 @@ include { FLYE } from '../modules/nf-core/flye/main'
 //
 // MODULE: Local modules
 //
-include { LJA as LJA_GS }         from '../modules/local/lja/main'
+include { LRGE }                  from '../modules/local/lrge/main'
 include { MAPQUIK as MAPQUIK_GS } from '../modules/local/mapquik/main'
 include { LJA }                   from '../modules/local/lja/main'
 include { AUTOCYCLER_SUBSAMPLE }  from '../modules/local/autocycler/subsample/main'
@@ -31,30 +31,6 @@ include { HIFIASM }               from '../modules/nf-core/hifiasm/main'
 include { MINIPOLISH }            from '../modules/local/minipolish/main'
 include { RAVEN }                 from '../modules/nf-core/raven/main'
 include { PLASSEMBLER }           from '../modules/local/plassembler/main'
-
-
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    FUNCTIONS
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
-
-def getGenomeSize(fasta) {
-    def size = 0
-    def is_gzipped = fasta.getName().endsWith('.gz')
-    def inputStream = is_gzipped ? 
-        new java.util.zip.GZIPInputStream(new FileInputStream(fasta.toFile())) : 
-        new FileInputStream(fasta.toFile())
-        
-    inputStream.withReader { reader ->
-        reader.eachLine { line ->
-            if (!line.startsWith('>')) {
-                size += line.strip().length()
-            }
-        }
-    }
-    return size
-}
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -104,14 +80,18 @@ workflow AE_ASSEMBLY_PIPELINE {
             }
         }
     
-    LJA_GS ( channels.ch_genome_size )
+    //
+    // MODULE: Estimate Genome Size with LRGE
+    //
+    LRGE ( channels.ch_genome_size )
+    ch_versions = ch_versions.mix(LRGE.out.versions)
 
     //
-    // LOGIC: Calculate genome size from assembly
+    // LOGIC: Parse genome size from LRGE output
     //
-    LJA_GS.out.fasta
-        .map { meta, fasta ->
-            def size = getGenomeSize(fasta)
+    LRGE.out.size_txt
+        .map { meta, txt ->
+            def size = txt.toFile().text.trim()
             log.info "Sample: ${meta.id} | Estimated Genome Size: ${size} bp"
             return [ meta, size ]
         }
@@ -133,19 +113,6 @@ workflow AE_ASSEMBLY_PIPELINE {
         ch_autocycler_input
     )
     ch_versions = ch_versions.mix(AUTOCYCLER_SUBSAMPLE.out.versions)
-
-    //
-    // For the initial LJA assembly: calculate coverage per contig
-    //
-    ch_lja_depth = LJA_GS.out.fasta
-        .map { meta, fasta -> [ meta.id, fasta ] }
-        .join( channels.ch_depth.map { meta, reads -> [ meta.id, meta, reads ] } )
-        .join( AUTOCYCLER_SUBSAMPLE.out.yaml.map { meta, yaml -> [ meta.id, yaml ] } )
-        .map { id, fasta, meta, reads, yaml ->
-            [ meta, reads, fasta, yaml ]
-        }
-    MAPQUIK_GS( ch_lja_depth )
-    // ch_versions = ch_versions.mix(MAPQUIK_GS.out.versions)
     
     //
     // RUN ASSEMBLERS ON SUBSAMPLES
