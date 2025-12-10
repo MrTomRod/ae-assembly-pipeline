@@ -109,9 +109,7 @@ workflow AE_ASSEMBLY_PIPELINE {
         }
         .set { ch_autocycler_input }
 
-    AUTOCYCLER_SUBSAMPLE (
-        ch_autocycler_input
-    )
+    AUTOCYCLER_SUBSAMPLE ( ch_autocycler_input )
     ch_versions = ch_versions.mix(AUTOCYCLER_SUBSAMPLE.out.versions)
     
     //
@@ -124,42 +122,29 @@ workflow AE_ASSEMBLY_PIPELINE {
             def meta_clone = meta.clone()
             // Strip 'sample_' prefix if present to get clean ID
             meta_clone.subset_id = reads.baseName.tokenize('.')[0].minus('sample_')
-            [ meta_clone, reads ]
+            [ meta_clone, reads ]       
         }
         .set { ch_subreads_input }
     
     // LJA
-    LJA (
-        ch_subreads_input
-    )
+    LJA ( ch_subreads_input )
     ch_versions = ch_versions.mix(LJA.out.versions)
 
     // Flye
-    FLYE (
-       ch_subreads_input,
-       "--pacbio-hifi"
-    )
+    FLYE ( ch_subreads_input, "--pacbio-hifi", 2 )
     ch_versions = ch_versions.mix(FLYE.out.versions)
 
     // PBIPA
-    PBIPA (
-       ch_subreads_input
-    )
+    PBIPA ( ch_subreads_input )
     ch_versions = ch_versions.mix(PBIPA.out.versions)
 
     // CANU
-    CANU (
-        ch_subreads_input,
-        "-pacbio-hifi",
-        ch_subreads_input.map { it[0].genome_size }
-    )
+    CANU ( ch_subreads_input, "-pacbio-hifi", ch_subreads_input.map { it[0].genome_size }, 2 )
     ch_versions = ch_versions.mix(CANU.out.versions)
 
     // Hifiasm
     ch_hifiasm_input = ch_subreads_input
-        .map { meta, reads ->
-            [ meta, reads, [] ]
-        }
+        .map { meta, reads -> [ meta, reads, [] ] }
     HIFIASM (
         ch_hifiasm_input,
         ch_hifiasm_input.map { meta, reads, ul -> [ meta, [], [] ] }, // paternal/maternal dump
@@ -169,28 +154,19 @@ workflow AE_ASSEMBLY_PIPELINE {
     ch_versions = ch_versions.mix(HIFIASM.out.versions)
 
     // MYLOASM
-    MYLOASM (
-        ch_subreads_input
-    )
+    MYLOASM ( ch_subreads_input )
     ch_versions = ch_versions.mix(MYLOASM.out.versions)
 
     // MINIPOLISH
-    MINIPOLISH (
-        ch_subreads_input,
-        "PacbioHifi"
-    )
+    MINIPOLISH ( ch_subreads_input, "PacbioHifi" )
     ch_versions = ch_versions.mix(MINIPOLISH.out.versions)
 
     // RAVEN
-    RAVEN (
-        ch_subreads_input
-    )
+    RAVEN ( ch_subreads_input )
     ch_versions = ch_versions.mix(RAVEN.out.versions)
 
     // PLASSEMBLER
-    PLASSEMBLER (
-        ch_subreads_input
-    )
+    PLASSEMBLER ( ch_subreads_input, 3, 2 )
     ch_versions = ch_versions.mix(PLASSEMBLER.out.versions)
 
 
@@ -222,9 +198,7 @@ workflow AE_ASSEMBLY_PIPELINE {
         }
         .set { ch_mapquik_input }
 
-    MAPQUIK (
-        ch_mapquik_input
-    )
+    MAPQUIK ( ch_mapquik_input )
     ch_versions = ch_versions.mix(MAPQUIK.out.versions)
 
 

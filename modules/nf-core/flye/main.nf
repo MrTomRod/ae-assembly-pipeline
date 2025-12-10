@@ -10,6 +10,7 @@ process FLYE {
     input:
     tuple val(meta), path(reads)
     val mode
+    val consensus_weight
 
     output:
     tuple val(meta), path("*.fasta.gz"), emit: fasta
@@ -37,9 +38,13 @@ process FLYE {
         $task.cpus \\
         $args
 
-    gzip -c assembly.fasta > ${prefix}.assembly.fasta.gz
-    gzip -c assembly_graph.gfa > ${prefix}.assembly_graph.gfa.gz
-    gzip -c assembly_graph.gv > ${prefix}.assembly_graph.gv.gz
+    if [ $consensus_weight -ne 1 ]; then
+        sed -i "/^>/ s/\$/ Autocycler_consensus_weight=$consensus_weight/" assembly.fasta
+    fi
+
+    gzip -c -n assembly.fasta > ${prefix}.assembly.fasta.gz
+    gzip -c -n assembly_graph.gfa > ${prefix}.assembly_graph.gfa.gz
+    gzip -c -n assembly_graph.gv > ${prefix}.assembly_graph.gv.gz
     mv assembly_info.txt ${prefix}.assembly_info.txt
     mv flye.log ${prefix}.flye.log
     mv params.json ${prefix}.params.json

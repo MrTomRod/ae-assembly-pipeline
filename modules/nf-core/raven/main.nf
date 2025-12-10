@@ -28,10 +28,10 @@ process RAVEN {
         --graphical-fragment-assembly ${prefix}.gfa \\
         $args \\
         $reads | \\
-        gzip -c > ${prefix}.fasta.gz
+        gzip -c -n > ${prefix}.fasta.gz
 
     # compress assembly graph
-    gzip -c ${prefix}.gfa > ${prefix}.gfa.gz
+    gzip -c -n ${prefix}.gfa > ${prefix}.gfa.gz
 
     # get tool version
     cat <<-END_VERSIONS > versions.yml

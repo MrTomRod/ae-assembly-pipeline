@@ -117,7 +117,7 @@ process PBIPA {
         }
     }' run_plasmid/19-final/final.p_ctg.fasta >> ${prefix}.fasta
 
-    gzip -c ${prefix}.fasta > ${prefix}.fasta.gz
+    gzip -c -n ${prefix}.fasta > ${prefix}.fasta.gz
 
     echo ">>> Pipeline Complete. Output: ${prefix}.fasta"
 

@@ -9,6 +9,7 @@ process CANU {
     tuple val(meta), path(reads)
     val mode
     val genomesize
+    val consensus_weight
 
     output:
     tuple val(meta), path("*.report")                   , emit: report
@@ -38,6 +39,10 @@ process CANU {
         $args \\
         maxThreads=$task.cpus \\
         $mode $reads
+
+    if [ $consensus_weight -ne 1 ]; then
+        sed -i "/^>/ s/\$/ Autocycler_consensus_weight=$consensus_weight/" ${prefix}.contigs.fasta
+    fi
 
     gzip -n *.fasta
 
