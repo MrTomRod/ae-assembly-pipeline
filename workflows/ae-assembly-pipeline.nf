@@ -31,6 +31,10 @@ include { HIFIASM }               from '../modules/nf-core/hifiasm/main'
 include { MINIPOLISH }            from '../modules/local/minipolish/main'
 include { RAVEN }                 from '../modules/nf-core/raven/main'
 include { PLASSEMBLER }           from '../modules/local/plassembler/main'
+include { AUTOCYCLER_COMPRESS }     from '../modules/local/autocycler/compress/main'
+include { AUTOCYCLER_CLUSTER }      from '../modules/local/autocycler/cluster/main'
+include { AUTOCYCLER_TRIM_RESOLVE } from '../modules/local/autocycler/trim_resolve/main'
+include { AUTOCYCLER_COMBINE }      from '../modules/local/autocycler/combine/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -200,6 +204,40 @@ workflow AE_ASSEMBLY_PIPELINE {
 
     MAPQUIK ( ch_mapquik_input )
     ch_versions = ch_versions.mix(MAPQUIK.out.versions)
+
+    //
+    // Autocycler Workflow
+    //
+    ch_autocycler_assemblies = ch_assemblies
+        .map { meta, fasta ->
+            def new_meta = meta.clone()
+            new_meta.remove('subset_id')
+            [ new_meta, fasta ]
+        }
+        .groupTuple()
+
+    AUTOCYCLER_COMPRESS ( ch_autocycler_assemblies )
+    ch_versions = ch_versions.mix(AUTOCYCLER_COMPRESS.out.versions)
+
+    AUTOCYCLER_CLUSTER ( AUTOCYCLER_COMPRESS.out.autocycler_out )
+    ch_versions = ch_versions.mix(AUTOCYCLER_CLUSTER.out.versions)
+
+    // Clusters need to be flattened to process in parallel
+    ch_clusters = AUTOCYCLER_CLUSTER.out.clusters
+        .transpose()
+
+    AUTOCYCLER_TRIM_RESOLVE ( ch_clusters )
+    ch_versions = ch_versions.mix(AUTOCYCLER_TRIM_RESOLVE.out.versions)
+
+    // Join compress output (for root files) with resolved clusters
+    ch_combine_input = AUTOCYCLER_COMPRESS.out.autocycler_out
+        .join(
+            AUTOCYCLER_TRIM_RESOLVE.out.resolved_cluster.groupTuple(),
+            by: 0
+        )
+    
+    AUTOCYCLER_COMBINE ( ch_combine_input )
+    ch_versions = ch_versions.mix(AUTOCYCLER_COMBINE.out.versions)
 
 
     //
