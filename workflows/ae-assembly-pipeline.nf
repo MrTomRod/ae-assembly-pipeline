@@ -14,10 +14,12 @@ include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pi
 //
 // MODULE: Installed directly from nf-core/modules
 //
-include { FLYE } from '../modules/nf-core/flye/main'
-include { SYLPH_PROFILE } from '../modules/nf-core/sylph/profile/main'
-include { SYLPHTAX_TAXPROF } from '../modules/local/sylphtax/taxprof/main'
-include { SYLPH_ADD_TAXID } from '../modules/local/sylph_add_taxid/main'
+include { FLYE }                                        from '../modules/nf-core/flye/main'
+include { SYLPH_PROFILE }                               from '../modules/nf-core/sylph/profile/main'
+include { SYLPHTAX_TAXPROF }                            from '../modules/local/sylphtax/taxprof/main'
+include { SYLPH_ADD_TAXID }                             from '../modules/local/sylph_add_taxid/main'
+include { SYLPH_QUERY }                           from '../modules/local/sylph_query/main'
+include { SYLPH_ADD_TAXID as SYLPH_ADD_TAXID_ASSEMBLY } from '../modules/local/sylph_add_taxid/main'
 
 //
 // MODULE: Local modules
@@ -34,7 +36,6 @@ include { HIFIASM }               from '../modules/nf-core/hifiasm/main'
 include { MINIPOLISH }            from '../modules/local/minipolish/main'
 include { RAVEN }                 from '../modules/nf-core/raven/main'
 include { PLASSEMBLER }           from '../modules/local/plassembler/main'
-
 include { AUTOCYCLER_RUN }      from '../modules/local/autocycler/run/main'
 
 /*
@@ -233,6 +234,26 @@ workflow AE_ASSEMBLY_PIPELINE {
 
     AUTOCYCLER_RUN ( ch_autocycler_assemblies )
     ch_versions = ch_versions.mix(AUTOCYCLER_RUN.out.versions)
+
+    //
+    // Sylph Profiling on Assemblies
+    //
+    if (params.sylph_db) {
+        ch_assemblies_profile = AUTOCYCLER_RUN.out.assembly
+            .map { meta, fasta ->
+                def new_meta = meta.clone()
+                new_meta.assembler_prefix = fasta.simpleName
+                [ new_meta, fasta ]
+            }
+
+        SYLPH_QUERY ( ch_assemblies_profile, file(params.sylph_db) )
+        ch_versions = ch_versions.mix(SYLPH_QUERY.out.versions)
+
+        if (params.sylph_taxdb_metadata) {
+            SYLPH_ADD_TAXID_ASSEMBLY ( SYLPH_QUERY.out.query_out, file(params.sylph_taxdb_metadata) )
+            ch_versions = ch_versions.mix(SYLPH_ADD_TAXID_ASSEMBLY.out.versions)
+        }
+    }
 
 
     //

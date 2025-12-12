@@ -26,7 +26,7 @@ process SYLPH_PROFILE {
     sylph profile \\
         -t ${task.cpus} \\
         ${args} \\
-        ${database}\\
+        ${database} \\
         ${input} \\
         -o ${prefix}.tsv
 
