@@ -36,7 +36,7 @@ process AUTOCYCLER_RUN {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        autocycler: \$(autocycler --version | sed 's/Autocycler v//')
+        autocycler: \$(autocycler --version | awk '{print \$2}')
     END_VERSIONS
     """
 }

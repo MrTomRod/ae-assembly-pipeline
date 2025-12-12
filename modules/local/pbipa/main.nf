@@ -124,7 +124,7 @@ process PBIPA {
     # --- VERSION TRACKING ---
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        pbipa: \$(ipa --version | sed 's/ipa //')
+        pbipa: \$(ipa --version | awk -F'version=' '{print \$2}')
         minimap2: \$(minimap2 --version)
         samtools: \$(samtools --version | head -n 1 | awk '{print \$2}')
     END_VERSIONS

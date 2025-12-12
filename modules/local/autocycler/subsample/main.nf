@@ -17,7 +17,6 @@ process AUTOCYCLER_SUBSAMPLE {
 
     script:
     def args = task.ext.args ?: ''
-    def VERSION = '0.3.0' // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
     
     """
     autocycler subsample \\
@@ -31,7 +30,7 @@ process AUTOCYCLER_SUBSAMPLE {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        autocycler: $VERSION
+        autocycler: \$(autocycler --version | awk '{print \$2}')
     END_VERSIONS
     """
 }

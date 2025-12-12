@@ -2,8 +2,7 @@ process SYLPH_ADD_TAXID {
     tag "$meta.id"
     label 'process_single'
 
-    // Using pandas container
-    container "quay.io/biocontainers/pandas:1.5.2"
+    container "docker.io/staphb/pandas:2.3.3"
 
     input:
     tuple val(meta), path(profile)

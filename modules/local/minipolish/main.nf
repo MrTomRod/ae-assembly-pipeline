@@ -80,11 +80,14 @@ process MINIPOLISH {
     # --- VERSION TRACKING ---
     # Note: minipolish often bundles minimap2 and miniasm, 
     # but we'll try to get separate versions if available in the container.
+
+    # minipolish --version -> Minipolish v0.2.0
+    # miniasm -V -> 0.3-r179
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        minipolish: \$(minipolish --version 2>&1 | grep -E 'minipolish' | awk '{print \$2}')
+        minipolish: \$(minipolish --version 2>&1 | awk '{print \$2}')
         minimap2: \$(minimap2 --version)
-        miniasm: \$(miniasm 2>&1 | grep -E 'Version' | awk '{print \$2}')
+        miniasm: \$(miniasm -V)
     END_VERSIONS
     """
 }
