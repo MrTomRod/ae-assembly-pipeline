@@ -15,10 +15,10 @@ process FLYE {
     output:
     tuple val(meta), path("*.fasta.gz"), emit: fasta
     tuple val(meta), path("*.gfa.gz")  , emit: gfa
-    tuple val(meta), path("*.gv.gz")   , emit: gv
-    tuple val(meta), path("*.txt")     , emit: txt
-    tuple val(meta), path("*.log")     , emit: log
-    tuple val(meta), path("*.json")    , emit: json
+    tuple val(meta), path("*.assembly_graph.gv.gz")   , emit: gv
+    tuple val(meta), path("*.assembly_info.txt")     , emit: txt
+    tuple val(meta), path("*.flye.log")     , emit: log
+    tuple val(meta), path("*.params.json")    , emit: json
     path "versions.yml"                , emit: versions
 
     when:
@@ -33,37 +33,21 @@ process FLYE {
     flye \\
         $mode \\
         $reads \\
-        --out-dir . \\
+        --out-dir flye \\
         --threads \\
         $task.cpus \\
         $args
 
     if [ $consensus_weight -ne 1 ]; then
-        sed -i "/^>/ s/\$/ Autocycler_consensus_weight=$consensus_weight/" assembly.fasta
+        sed -i "/^>/ s/\$/ Autocycler_consensus_weight=$consensus_weight/" flye/assembly.fasta
     fi
 
-    gzip -c -n assembly.fasta > ${prefix}.fasta.gz
-    gzip -c -n assembly_graph.gfa > ${prefix}.gfa.gz
-    gzip -c -n assembly_graph.gv > ${prefix}.assembly_graph.gv.gz
-    mv assembly_info.txt ${prefix}.assembly_info.txt
-    mv flye.log ${prefix}.flye.log
-    mv params.json ${prefix}.params.json
-
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        flye: \$( flye --version )
-    END_VERSIONS
-    """
-
-    stub:
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    """
-    echo stub | gzip -c > ${prefix}.fasta.gz
-    echo stub | gzip -c > ${prefix}.gfa.gz
-    echo stub | gzip -c > ${prefix}.assembly_graph.gv.gz
-    echo contig_1 > ${prefix}.assembly_info.txt
-    echo stub > ${prefix}.flye.log
-    echo stub > ${prefix}.params.json
+    gzip -c -n flye/assembly.fasta > ${prefix}.fasta.gz
+    gzip -c -n flye/assembly_graph.gfa > ${prefix}.gfa.gz
+    gzip -c -n flye/assembly_graph.gv > ${prefix}.assembly_graph.gv.gz
+    mv flye/assembly_info.txt ${prefix}.assembly_info.txt
+    mv flye/flye.log ${prefix}.flye.log
+    mv flye/params.json ${prefix}.params.json
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

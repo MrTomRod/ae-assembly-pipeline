@@ -38,6 +38,7 @@ process PLASSEMBLER {
         --keep_chromosome \\
         $args
     
+    # Collect Plassembler output
     if [ -f plassembler_out/chromosome.fasta ]; then
         gzip -n -c plassembler_out/chromosome.fasta > ${prefix}.chromosome.fasta.gz
     fi
@@ -49,37 +50,15 @@ process PLASSEMBLER {
         gzip -n -c plassembler_out/plassembler_plasmids.fasta > ${prefix}.fasta.gz
     fi
 
-    if [ -d plassembler_out/flye_output ]; then
-        if [ $flye_consensus_weight -ne 1 ]; then
-            sed -i "/^>/ s/\$/ Autocycler_consensus_weight=$flye_consensus_weight/" plassembler_out/flye_output/assembly.fasta
-        fi
-        gzip -n -c plassembler_out/flye_output/assembly.fasta > ${flye_prefix}.fasta.gz
-        gzip -n -c plassembler_out/flye_output/assembly_graph.gfa > ${flye_prefix}.gfa.gz
-        gzip -n -c plassembler_out/flye_output/assembly_graph.gv > ${flye_prefix}.gv.gz
-        cp plassembler_out/flye_output/assembly_info.txt ${flye_prefix}.txt
-        cp plassembler_out/flye_output/flye.log ${flye_prefix}.log
+    # Collect Flye output
+    if [ $flye_consensus_weight -ne 1 ]; then
+        sed -i "/^>/ s/\$/ Autocycler_consensus_weight=$flye_consensus_weight/" plassembler_out/flye_output/assembly.fasta
     fi
-
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        plassembler: \$(plassembler --version 2>&1 | sed 's/plassembler, version //')
-        flye: \$(flye --version)
-    END_VERSIONS
-    """
-
-    stub:
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    def flye_prefix = prefix.startsWith("plassembler_") ? prefix.replaceFirst(/^plassembler_/, "pflye_") : "pflye_${prefix}"
-    """
-    mkdir -p plassembler_out/flye_output
-    echo "" | gzip -n > ${prefix}.chromosome.fasta.gz
-    echo "" | gzip -n > ${prefix}.fasta.gz
-    
-    echo "" | gzip -n > ${flye_prefix}.fasta.gz
-    echo "" | gzip -n > ${flye_prefix}.gfa.gz
-    echo "" | gzip -n > ${flye_prefix}.gv.gz
-    touch ${flye_prefix}.txt
-    touch ${flye_prefix}.log
+    gzip -n -c plassembler_out/flye_output/assembly.fasta > ${flye_prefix}.fasta.gz
+    gzip -n -c plassembler_out/flye_output/assembly_graph.gfa > ${flye_prefix}.gfa.gz
+    gzip -n -c plassembler_out/flye_output/assembly_graph.gv > ${flye_prefix}.gv.gz
+    cp plassembler_out/flye_output/assembly_info.txt ${flye_prefix}.txt
+    cp plassembler_out/flye_output/flye.log ${flye_prefix}.log
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

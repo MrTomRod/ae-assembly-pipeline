@@ -12,9 +12,9 @@ process CANU {
     val consensus_weight
 
     output:
-    tuple val(meta), path("*.report")                         , emit: report
-    tuple val(meta), path("*.fasta.gz")                       , emit: assembly
-    path "versions.yml"                                       , emit: versions
+    tuple val(meta), path("*.fasta.gz")      , emit: fasta
+    tuple val(meta), path("*.report")        , emit: report
+    path "versions.yml"                          , emit: versions
 
     when:
     task.ext.when == null || task.ext.when
@@ -26,22 +26,24 @@ process CANU {
     if ( !valid_mode.contains(mode) )  { error "Unrecognised mode to run Canu. Options: ${valid_mode.join(', ')}" }
     """
     canu \\
-        -p ${prefix} \\
+        -p canu -d canu \\
+        $mode \\
         genomeSize=${genomesize} \\
+        -fast \\
         minInputCoverage=1 \\
         stopOnLowCoverage=1 \\
-        $args \\
+        useGrid=false \\
         maxThreads=$task.cpus \\
-        $mode $reads
+        $args \\
+        $reads
 
     if [ $consensus_weight -ne 1 ]; then
-        sed -i "/^>/ s/\$/ Autocycler_consensus_weight=$consensus_weight/" ${prefix}.contigs.fasta
+        sed -i "/^>/ s/\$/ Autocycler_consensus_weight=$consensus_weight/" canu/canu.contigs.fasta
     fi
 
-    mkdir fastas
-    mv *.fasta fastas/
-    gzip -n fastas/*.fasta
-    mv fastas/${prefix}.contigs.fasta.gz ${prefix}.fasta.gz
+    gzip -n canu/*.fasta
+    mv canu/canu.contigs.fasta.gz ${prefix}.fasta.gz
+    mv canu/*.report .
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

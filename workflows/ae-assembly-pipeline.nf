@@ -145,14 +145,7 @@ workflow AE_ASSEMBLY_PIPELINE {
     ch_versions = ch_versions.mix(CANU.out.versions)
 
     // Hifiasm
-    ch_hifiasm_input = ch_subreads_input
-        .map { meta, reads -> [ meta, reads, [] ] }
-    HIFIASM (
-        ch_hifiasm_input,
-        ch_hifiasm_input.map { meta, reads, ul -> [ meta, [], [] ] }, // paternal/maternal dump
-        ch_hifiasm_input.map { meta, reads, ul -> [ meta, [], [] ] }, // hic
-        ch_hifiasm_input.map { meta, reads, ul -> [ meta, [] ] }      // bin files
-    )
+    HIFIASM ( ch_subreads_input )
     ch_versions = ch_versions.mix(HIFIASM.out.versions)
 
     // MYLOASM
@@ -178,8 +171,8 @@ workflow AE_ASSEMBLY_PIPELINE {
     ch_assemblies = LJA.out.fasta
         .mix(FLYE.out.fasta)
         .mix(PBIPA.out.fasta)
-        .mix(CANU.out.assembly)
-        .mix(MYLOASM.out.contigs_gz)
+        .mix(CANU.out.fasta)
+        .mix(MYLOASM.out.fasta)
         .mix(HIFIASM.out.fasta)
         .mix(MINIPOLISH.out.fasta)
         .mix(RAVEN.out.fasta)

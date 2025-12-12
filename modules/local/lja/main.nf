@@ -1,18 +1,15 @@
 process LJA {
     tag "$meta.id"
     label 'process_medium'
-    // conda "${moduleDir}/environment.yml"
     container "docker://docker.io/troder/lja"
 
     input:
     tuple val(meta), path(reads)
-    // val ploidy
 
     output:
-    // tuple val(meta), path("*.fasta"),    emit: fastaraw
     tuple val(meta), path("*.fasta.gz"), emit: fasta
     tuple val(meta), path("*.gfa.gz")  , emit: gfa
-    tuple val(meta), path("*.stdout")  , emit: stdout
+    tuple val(meta), path("*.log")     , emit: log
     path "versions.yml"                , emit: versions
 
     when:
@@ -29,35 +26,16 @@ process LJA {
     lja \\
        $args \\
         $input_list \\
-        --output-dir . \\
+        --output-dir lja \\
         --threads $task.cpus \\
-        > ${prefix}.lja.stdout
+        > ${prefix}.log
 
-    gzip -c -n assembly.fasta > ${prefix}.fasta.gz
-    gzip -c -n mdbg.gfa > ${prefix}.gfa.gz
-
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        LJA: $VERSION
-    END_VERSIONS
-    """
-
-    stub:
-    def args = task.ext.args ?: ''
-    def prefix = task.ext.prefix ?: "${meta.id}"
-    def VERSION = '0.2' // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
-
-    """
-    echo stub | gzip -c > ${prefix}.fasta.gz
-    echo stub | gzip -c > ${prefix}.gfa.gz
-
-    cat <<-END_STDOUT > ${prefix}.lja.stdout
-    00:00:00 0Mb  INFO: LJA pipeline finished
-    END_STDOUT
+    gzip -c -n lja/assembly.fasta > ${prefix}.fasta.gz
+    gzip -c -n lja/mdbg.gfa > ${prefix}.gfa.gz
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         LJA: $VERSION
     END_VERSIONS
     """
-}
+}   
