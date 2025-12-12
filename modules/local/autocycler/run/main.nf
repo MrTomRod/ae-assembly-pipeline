@@ -7,11 +7,11 @@ process AUTOCYCLER_RUN {
     tuple val(meta), path(assemblies, stageAs: '2_assemblies/*')
 
     output:
-    tuple val(meta), path("autocycler_out/clustering")                  , emit: clustering_dir
-    tuple val(meta), path("autocycler_out/consensus_assembly.fasta")    , emit: assembly
-    tuple val(meta), path("autocycler_out/consensus_assembly.*")        , emit: all_files
-    tuple val(meta), path("autocycler_out/input_assemblies.*")         , emit: input_assemblies
-    path "versions.yml"                                                 , emit: versions
+    tuple val(meta), path("autocycler_out/clustering")                , emit: clustering_dir
+    tuple val(meta), path("autocycler_out/consensus_assembly.fasta")  , emit: assembly
+    tuple val(meta), path("autocycler_out/consensus_assembly.*")      , emit: all_files
+    tuple val(meta), path("autocycler_out/input_assemblies.*")        , emit: input_assemblies
+    path "versions.yml"                                               , emit: versions
 
     script:
     """

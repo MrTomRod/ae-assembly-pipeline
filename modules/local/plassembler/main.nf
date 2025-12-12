@@ -46,7 +46,7 @@ process PLASSEMBLER {
         if [ $circular_plasmid_cluster_weight -ne 1 ]; then
             sed -i 's/circular=True/circular=True Autocycler_cluster_weight=${circular_plasmid_cluster_weight}/' plassembler_out/plassembler_plasmids.fasta
         fi
-        gzip -n -c plassembler_out/plassembler_plasmids.fasta > ${prefix}.plasmids.fasta.gz
+        gzip -n -c plassembler_out/plassembler_plasmids.fasta > ${prefix}.fasta.gz
     fi
 
     if [ -d plassembler_out/flye_output ]; then
@@ -73,7 +73,7 @@ process PLASSEMBLER {
     """
     mkdir -p plassembler_out/flye_output
     echo "" | gzip -n > ${prefix}.chromosome.fasta.gz
-    echo "" | gzip -n > ${prefix}.plasmids.fasta.gz
+    echo "" | gzip -n > ${prefix}.fasta.gz
     
     echo "" | gzip -n > ${flye_prefix}.fasta.gz
     echo "" | gzip -n > ${flye_prefix}.gfa.gz

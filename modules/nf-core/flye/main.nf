@@ -42,8 +42,8 @@ process FLYE {
         sed -i "/^>/ s/\$/ Autocycler_consensus_weight=$consensus_weight/" assembly.fasta
     fi
 
-    gzip -c -n assembly.fasta > ${prefix}.assembly.fasta.gz
-    gzip -c -n assembly_graph.gfa > ${prefix}.assembly_graph.gfa.gz
+    gzip -c -n assembly.fasta > ${prefix}.fasta.gz
+    gzip -c -n assembly_graph.gfa > ${prefix}.gfa.gz
     gzip -c -n assembly_graph.gv > ${prefix}.assembly_graph.gv.gz
     mv assembly_info.txt ${prefix}.assembly_info.txt
     mv flye.log ${prefix}.flye.log
@@ -58,8 +58,8 @@ process FLYE {
     stub:
     def prefix = task.ext.prefix ?: "${meta.id}"
     """
-    echo stub | gzip -c > ${prefix}.assembly.fasta.gz
-    echo stub | gzip -c > ${prefix}.assembly_graph.gfa.gz
+    echo stub | gzip -c > ${prefix}.fasta.gz
+    echo stub | gzip -c > ${prefix}.gfa.gz
     echo stub | gzip -c > ${prefix}.assembly_graph.gv.gz
     echo contig_1 > ${prefix}.assembly_info.txt
     echo stub > ${prefix}.flye.log

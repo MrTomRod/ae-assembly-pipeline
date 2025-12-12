@@ -33,8 +33,8 @@ process LJA {
         --threads $task.cpus \\
         > ${prefix}.lja.stdout
 
-    gzip -c -n assembly.fasta > ${prefix}.assembly.fasta.gz
-    gzip -c -n mdbg.gfa > ${prefix}.mdbg.gfa.gz
+    gzip -c -n assembly.fasta > ${prefix}.fasta.gz
+    gzip -c -n mdbg.gfa > ${prefix}.gfa.gz
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -48,8 +48,8 @@ process LJA {
     def VERSION = '0.2' // WARN: Version information not provided by tool on CLI. Please update this string when bumping container versions.
 
     """
-    echo stub | gzip -c > ${prefix}.assembly.fasta.gz
-    echo stub | gzip -c > ${prefix}.mdbg.gfa.gz
+    echo stub | gzip -c > ${prefix}.fasta.gz
+    echo stub | gzip -c > ${prefix}.gfa.gz
 
     cat <<-END_STDOUT > ${prefix}.lja.stdout
     00:00:00 0Mb  INFO: LJA pipeline finished

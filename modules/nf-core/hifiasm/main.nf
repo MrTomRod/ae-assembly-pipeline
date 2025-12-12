@@ -122,7 +122,7 @@ process HIFIASM {
     }
 
     gfa_to_fasta "${prefix}.bp.p_ctg.gfa" "${prefix}.bp.p_ctg.fasta"
-    gzip -c -n "${prefix}.bp.p_ctg.fasta" > "${prefix}.bp.p_ctg.fasta.gz"
+    gzip -c -n "${prefix}.bp.p_ctg.fasta" > "${prefix}.fasta.gz"
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
@@ -145,7 +145,7 @@ process HIFIASM {
     touch ${prefix}.a_ctg.gfa
     touch ${prefix}.bp.hap1.p_ctg.gfa
     touch ${prefix}.bp.hap2.p_ctg.gfa
-    touch ${prefix}.p_ctg.fasta.gz
+    touch ${prefix}.fasta.gz
     echo "" | gzip > ${prefix}.ec.fa.gz
     echo "" | gzip > ${prefix}.ovlp.paf.gz
     touch ${prefix}.stderr.log

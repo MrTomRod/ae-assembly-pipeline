@@ -20,10 +20,10 @@ include { FLYE } from '../modules/nf-core/flye/main'
 // MODULE: Local modules
 //
 include { LRGE }                  from '../modules/local/lrge/main'
-include { MAPQUIK as MAPQUIK_GS } from '../modules/local/mapquik/main'
 include { LJA }                   from '../modules/local/lja/main'
 include { AUTOCYCLER_SUBSAMPLE }  from '../modules/local/autocycler/subsample/main'
 include { MAPQUIK }               from '../modules/local/mapquik/main'
+include { MAPQUIK as MAPQUIK_AC } from '../modules/local/mapquik/main'
 include { PBIPA }                 from '../modules/local/pbipa/main'
 include { CANU }                  from '../modules/nf-core/canu/main'
 include { MYLOASM }               from '../modules/nf-core/myloasm/main'
@@ -173,7 +173,7 @@ workflow AE_ASSEMBLY_PIPELINE {
 
 
     //
-    // Calculate depth using mapquik
+    // Combine assemblies into channel
     //
     ch_assemblies = LJA.out.fasta
         .mix(FLYE.out.fasta)
@@ -186,6 +186,7 @@ workflow AE_ASSEMBLY_PIPELINE {
         .mix(PLASSEMBLER.out.plasmids)
         .mix(PLASSEMBLER.out.flye_fasta)
 
+    // Calculate depth using mapquik
     ch_assemblies
         .combine(ch_subreads_input, by: 0) // [ meta, assembly, reads ]
         .map { meta, assembly, reads ->
@@ -246,6 +247,17 @@ workflow AE_ASSEMBLY_PIPELINE {
             sort: true,
             newLine: true
         ).set { ch_collated_versions }
+
+    // Calculate depth using mapquik on final autocycler assemblies
+    ch_mapquik_ac_input = AUTOCYCLER_RUN.out.assembly
+        .map { meta, assembly -> [ meta.id, meta, assembly ] }
+        .join( channels.ch_depth.map { meta, reads -> [ meta.id, reads ] } )
+        .join( AUTOCYCLER_SUBSAMPLE.out.yaml.map { meta, yaml -> [ meta.id, yaml ] } )
+        .map { id, meta, assembly, reads, yaml ->
+            [ meta, reads, assembly, yaml ]
+        }
+    MAPQUIK_AC ( ch_mapquik_ac_input )
+    ch_versions = ch_versions.mix(MAPQUIK_AC.out.versions)
 
 
     emit:
