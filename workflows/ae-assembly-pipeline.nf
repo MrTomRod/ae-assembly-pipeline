@@ -15,6 +15,9 @@ include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pi
 // MODULE: Installed directly from nf-core/modules
 //
 include { FLYE } from '../modules/nf-core/flye/main'
+include { SYLPH_PROFILE } from '../modules/nf-core/sylph/profile/main'
+include { SYLPHTAX_TAXPROF } from '../modules/local/sylphtax/taxprof/main'
+include { SYLPH_ADD_TAXID } from '../modules/local/sylph_add_taxid/main'
 
 //
 // MODULE: Local modules
@@ -100,6 +103,26 @@ workflow AE_ASSEMBLY_PIPELINE {
         .set { ch_genome_size }
 
     //
+    // Classify reads using Sylph + GTDB
+    //
+    if (params.sylph_db) {
+         SYLPH_PROFILE (
+             channels.ch_symlink.map { meta, reads ->
+                 def new_meta = meta.clone()
+                 new_meta.single_end = true
+                 [ new_meta, reads ]
+             },
+             file(params.sylph_db)
+         )
+         ch_versions = ch_versions.mix(SYLPH_PROFILE.out.versions)
+
+         if (params.sylph_taxdb_metadata) {
+             SYLPH_ADD_TAXID ( SYLPH_PROFILE.out.profile_out, file(params.sylph_taxdb_metadata) )
+             ch_versions = ch_versions.mix(SYLPH_ADD_TAXID.out.versions)
+         }
+    }
+
+    //
     // PROCESS: Autocycler Subsample
     //
     channels.ch_autocycler
@@ -113,7 +136,7 @@ workflow AE_ASSEMBLY_PIPELINE {
 
     AUTOCYCLER_SUBSAMPLE ( ch_autocycler_input )
     ch_versions = ch_versions.mix(AUTOCYCLER_SUBSAMPLE.out.versions)
-    
+
     //
     // RUN ASSEMBLERS ON SUBSAMPLES
     //
