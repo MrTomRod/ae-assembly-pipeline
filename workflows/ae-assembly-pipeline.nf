@@ -149,55 +149,73 @@ workflow AE_ASSEMBLY_PIPELINE {
         .set { ch_subreads_input }
     
     // LJA
-    LJA ( ch_subreads_input )
-    ch_versions = ch_versions.mix(LJA.out.versions)
+    //
+    // Run Assemblers
+    //
+    ch_assemblies = Channel.empty()
+
+    // LJA
+    if (!params.skip_lja) {
+        LJA ( ch_subreads_input )
+        ch_versions = ch_versions.mix(LJA.out.versions)
+        ch_assemblies = ch_assemblies.mix(LJA.out.fasta)
+    }
 
     // Flye
-    FLYE ( ch_subreads_input, "--pacbio-hifi", 2 )
-    ch_versions = ch_versions.mix(FLYE.out.versions)
+    if (!params.skip_flye) {
+        FLYE ( ch_subreads_input, "--pacbio-hifi", 2 )
+        ch_versions = ch_versions.mix(FLYE.out.versions)
+        ch_assemblies = ch_assemblies.mix(FLYE.out.fasta)
+    }
 
     // PBIPA
-    PBIPA ( ch_subreads_input )
-    ch_versions = ch_versions.mix(PBIPA.out.versions)
+    if (!params.skip_pbipa) {
+        PBIPA ( ch_subreads_input )
+        ch_versions = ch_versions.mix(PBIPA.out.versions)
+        ch_assemblies = ch_assemblies.mix(PBIPA.out.fasta)
+    }
 
     // CANU
-    CANU ( ch_subreads_input, "-pacbio-hifi", ch_subreads_input.map { it[0].genome_size }, 2 )
-    ch_versions = ch_versions.mix(CANU.out.versions)
+    if (!params.skip_canu) {
+        CANU ( ch_subreads_input, "-pacbio-hifi", ch_subreads_input.map { it[0].genome_size }, 2 )
+        ch_versions = ch_versions.mix(CANU.out.versions)
+        ch_assemblies = ch_assemblies.mix(CANU.out.fasta)
+    }
 
     // Hifiasm
-    HIFIASM ( ch_subreads_input )
-    ch_versions = ch_versions.mix(HIFIASM.out.versions)
+    if (!params.skip_hifiasm) {
+        HIFIASM ( ch_subreads_input )
+        ch_versions = ch_versions.mix(HIFIASM.out.versions)
+        ch_assemblies = ch_assemblies.mix(HIFIASM.out.fasta)
+    }
 
     // MYLOASM
-    MYLOASM ( ch_subreads_input )
-    ch_versions = ch_versions.mix(MYLOASM.out.versions)
+    if (!params.skip_myloasm) {
+        MYLOASM ( ch_subreads_input )
+        ch_versions = ch_versions.mix(MYLOASM.out.versions)
+        ch_assemblies = ch_assemblies.mix(MYLOASM.out.fasta)
+    }
 
     // MINIPOLISH
-    MINIPOLISH ( ch_subreads_input, "PacbioHifi" )
-    ch_versions = ch_versions.mix(MINIPOLISH.out.versions)
+    if (!params.skip_minipolish) {
+        MINIPOLISH ( ch_subreads_input, "PacbioHifi" )
+        ch_versions = ch_versions.mix(MINIPOLISH.out.versions)
+        ch_assemblies = ch_assemblies.mix(MINIPOLISH.out.fasta)
+    }
 
     // RAVEN
-    RAVEN ( ch_subreads_input )
-    ch_versions = ch_versions.mix(RAVEN.out.versions)
+    if (!params.skip_raven) {
+        RAVEN ( ch_subreads_input )
+        ch_versions = ch_versions.mix(RAVEN.out.versions)
+        ch_assemblies = ch_assemblies.mix(RAVEN.out.fasta)
+    }
 
     // PLASSEMBLER
-    PLASSEMBLER ( ch_subreads_input, 3, 2 )
-    ch_versions = ch_versions.mix(PLASSEMBLER.out.versions)
-
-
-    //
-    // Combine assemblies into channel
-    //
-    ch_assemblies = LJA.out.fasta
-        .mix(FLYE.out.fasta)
-        .mix(PBIPA.out.fasta)
-        .mix(CANU.out.fasta)
-        .mix(MYLOASM.out.fasta)
-        .mix(HIFIASM.out.fasta)
-        .mix(MINIPOLISH.out.fasta)
-        .mix(RAVEN.out.fasta)
-        .mix(PLASSEMBLER.out.plasmids)
-        .mix(PLASSEMBLER.out.flye_fasta)
+    if (!params.skip_plassembler) {
+        PLASSEMBLER ( ch_subreads_input, 3, 2 )
+        ch_versions = ch_versions.mix(PLASSEMBLER.out.versions)
+        ch_assemblies = ch_assemblies.mix(PLASSEMBLER.out.plasmids).mix(PLASSEMBLER.out.flye_fasta)
+    }
 
     // Calculate depth using mapquik
     ch_assemblies
