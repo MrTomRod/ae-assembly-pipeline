@@ -46,7 +46,7 @@ process SYLPH_ADD_TAXID {
     reader = pd.read_csv(
         taxdb_metadata_path, 
         sep='\\t', 
-        usecols=['accession', 'ncbi_taxid', 'ncbi_species_taxid'], 
+        usecols=['accession', 'ncbi_taxid', 'ncbi_species_taxid', 'ncbi_taxonomy', 'ncbi_taxonomy_unfiltered'],
         index_col=0,
         chunksize=20000
     )
@@ -81,7 +81,7 @@ process SYLPH_ADD_TAXID {
 
     profile_with_taxid.to_csv(output_path, sep='\\t', index=False)
     print(f"Success! Saved merged file to: {output_path}")
-    print(profile_with_taxid[['Genome_file', 'ncbi_taxid', 'ncbi_species_taxid']].head())
+    print(profile_with_taxid[['Genome_file', 'ncbi_taxid', 'ncbi_species_taxid', 'ncbi_taxonomy', 'ncbi_taxonomy_unfiltered']].head())
 
     # Write versions.yml
     with open("versions.yml", "w") as f:

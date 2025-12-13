@@ -11,32 +11,24 @@ include { softwareVersionsToYAML } from '../subworkflows/nf-core/utils_nfcore_pi
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-//
-// MODULE: Installed directly from nf-core/modules
-//
 include { FLYE }                                        from '../modules/nf-core/flye/main'
 include { SYLPH_PROFILE }                               from '../modules/nf-core/sylph/profile/main'
-include { SYLPHTAX_TAXPROF }                            from '../modules/local/sylphtax/taxprof/main'
-include { SYLPH_ADD_TAXID }                             from '../modules/local/sylph_add_taxid/main'
-include { SYLPH_QUERY }                           from '../modules/local/sylph_query/main'
-include { SYLPH_ADD_TAXID as SYLPH_ADD_TAXID_ASSEMBLY } from '../modules/local/sylph_add_taxid/main'
-
-//
-// MODULE: Local modules
-//
-include { LRGE }                  from '../modules/local/lrge/main'
-include { LJA }                   from '../modules/local/lja/main'
-include { AUTOCYCLER_SUBSAMPLE }  from '../modules/local/autocycler/subsample/main'
-include { MAPQUIK }               from '../modules/local/mapquik/main'
-include { MAPQUIK as MAPQUIK_AC } from '../modules/local/mapquik/main'
-include { PBIPA }                 from '../modules/local/pbipa/main'
-include { CANU }                  from '../modules/nf-core/canu/main'
-include { MYLOASM }               from '../modules/nf-core/myloasm/main'
-include { HIFIASM }               from '../modules/nf-core/hifiasm/main'
-include { MINIPOLISH }            from '../modules/local/minipolish/main'
-include { RAVEN }                 from '../modules/nf-core/raven/main'
-include { PLASSEMBLER }           from '../modules/local/plassembler/main'
-include { AUTOCYCLER_RUN }      from '../modules/local/autocycler/run/main'
+include { SYLPH_QUERY }                                 from '../modules/local/sylph/query/main'
+include { SYLPH_ADD_TAXID }                             from '../modules/local/sylph/add_taxid/main'
+include { SYLPH_ADD_TAXID as SYLPH_ADD_TAXID_ASSEMBLY } from '../modules/local/sylph/add_taxid/main'
+include { LRGE }                                        from '../modules/local/lrge/main'
+include { LJA }                                         from '../modules/local/lja/main'
+include { AUTOCYCLER_SUBSAMPLE }                        from '../modules/local/autocycler/subsample/main'
+include { MAPQUIK }                                     from '../modules/local/mapquik/main'
+include { MAPQUIK as MAPQUIK_AC }                       from '../modules/local/mapquik/main'
+include { PBIPA }                                       from '../modules/local/pbipa/main'
+include { CANU }                                        from '../modules/nf-core/canu/main'
+include { MYLOASM }                                     from '../modules/nf-core/myloasm/main'
+include { HIFIASM }                                     from '../modules/nf-core/hifiasm/main'
+include { MINIPOLISH }                                  from '../modules/local/minipolish/main'
+include { RAVEN }                                       from '../modules/nf-core/raven/main'
+include { PLASSEMBLER }                                 from '../modules/local/plassembler/main'
+include { AUTOCYCLER_RUN }                              from '../modules/local/autocycler/run/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
