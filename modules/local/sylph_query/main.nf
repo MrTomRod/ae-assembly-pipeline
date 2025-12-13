@@ -18,14 +18,32 @@ process SYLPH_QUERY {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${meta.id}"
+    
     """
+    # 1. Split the assembly into contigs
+    # Awk script to split the FASTA file by header (>) and save them in the 'contigs' directory
+    # Note: We replace any non-alphanumeric/non-underscore characters in the header 
+    # with an underscore for safe filenames.
+    awk '
+    /^>/ { 
+        name = substr(\$1, 2); 
+        gsub(/[^a-zA-Z0-9_]/, "_", name); 
+        
+        if (filename) close(filename); 
+        filename = "contig_" name ".fasta"; 
+    } 
+    { 
+        print > filename;
+    }' ${assembly}
+
+    # 2. Query the entire assembly as well as its contigs
     sylph query \\
         ${database} \\
-        -r ${assembly} \\
+        -r *.fasta \\
         -t ${task.cpus} \\
         ${args} \\
         -o ${prefix}.tsv
-
+    
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         sylph: \$(sylph -V | awk '{print \$2}')

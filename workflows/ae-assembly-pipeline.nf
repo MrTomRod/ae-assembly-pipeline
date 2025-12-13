@@ -250,7 +250,8 @@ workflow AE_ASSEMBLY_PIPELINE {
         ch_versions = ch_versions.mix(SYLPH_QUERY.out.versions)
 
         if (params.sylph_taxdb_metadata) {
-            SYLPH_ADD_TAXID_ASSEMBLY ( SYLPH_QUERY.out.query_out, file(params.sylph_taxdb_metadata) )
+            ch_sylph = SYLPH_QUERY.out.query_out
+            SYLPH_ADD_TAXID_ASSEMBLY ( ch_sylph, file(params.sylph_taxdb_metadata) )
             ch_versions = ch_versions.mix(SYLPH_ADD_TAXID_ASSEMBLY.out.versions)
         }
     }
