@@ -1,6 +1,6 @@
 process LJA {
     tag "$meta.id"
-    label 'process_medium'
+    label 'process_low'
     container "docker://docker.io/troder/lja"
 
     input:

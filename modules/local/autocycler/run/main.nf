@@ -1,5 +1,5 @@
 process AUTOCYCLER_RUN {
-    label 'process_low'
+    label 'process_medium'
 
     container "docker://localhost/autocycler-dev"
 
