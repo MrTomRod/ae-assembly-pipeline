@@ -16,6 +16,7 @@ include { SYLPH_PROFILE }                               from '../modules/nf-core
 include { SYLPH_QUERY }                                 from '../modules/local/sylph/query/main'
 include { SYLPH_ADD_TAXID }                             from '../modules/local/sylph/add_taxid/main'
 include { SYLPH_ADD_TAXID as SYLPH_ADD_TAXID_ASSEMBLY } from '../modules/local/sylph/add_taxid/main'
+include { SYLPH_PREPARE_DB }                            from '../modules/local/sylph/prepare_db/main'
 include { LRGE }                                        from '../modules/local/lrge/main'
 include { LJA }                                         from '../modules/local/lja/main'
 include { AUTOCYCLER_SUBSAMPLE }                        from '../modules/local/autocycler/subsample/main'
@@ -110,7 +111,10 @@ workflow AE_ASSEMBLY_PIPELINE {
          ch_versions = ch_versions.mix(SYLPH_PROFILE.out.versions)
 
          if (params.sylph_taxdb_metadata) {
-             SYLPH_ADD_TAXID ( SYLPH_PROFILE.out.profile_out, file(params.sylph_taxdb_metadata) )
+             SYLPH_PREPARE_DB ( file(params.sylph_taxdb_metadata) )
+             ch_versions = ch_versions.mix(SYLPH_PREPARE_DB.out.versions)
+             
+             SYLPH_ADD_TAXID ( SYLPH_PROFILE.out.profile_out, SYLPH_PREPARE_DB.out.db )
              ch_versions = ch_versions.mix(SYLPH_ADD_TAXID.out.versions)
          }
     }
@@ -243,7 +247,7 @@ workflow AE_ASSEMBLY_PIPELINE {
 
         if (params.sylph_taxdb_metadata) {
             ch_sylph = SYLPH_QUERY.out.query_out
-            SYLPH_ADD_TAXID_ASSEMBLY ( ch_sylph, file(params.sylph_taxdb_metadata) )
+            SYLPH_ADD_TAXID_ASSEMBLY ( ch_sylph, SYLPH_PREPARE_DB.out.db )
             ch_versions = ch_versions.mix(SYLPH_ADD_TAXID_ASSEMBLY.out.versions)
         }
     }
