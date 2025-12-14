@@ -1,7 +1,7 @@
 process AUTOCYCLER_SUBSAMPLE {
     tag "$meta.id"
     label 'process_low'
-    container "docker://localhost/autocycler-dev"
+    container "docker.io/troder/autocycler:0.5.2"
     shell = false
 
     input:

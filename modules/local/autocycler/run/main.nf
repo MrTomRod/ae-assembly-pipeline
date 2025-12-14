@@ -1,7 +1,7 @@
 process AUTOCYCLER_RUN {
     label 'process_medium'
 
-    container "docker://localhost/autocycler-dev"
+    container "docker.io/troder/autocycler:0.5.2"
 
     input:
     tuple val(meta), path(assemblies, stageAs: '2_assemblies/*')

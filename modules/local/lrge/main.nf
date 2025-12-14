@@ -3,7 +3,6 @@ process LRGE {
     label 'process_low'
 
     container "ghcr.io/mbhall88/lrge:latest"
-    containerOptions "--entrypoint ''"
 
     input:
     tuple val(meta), path(reads)

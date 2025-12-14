@@ -20,6 +20,9 @@ process PBIPA {
     def genome_size = meta.genome_size ? meta.genome_size : '10000000'
     
     """
+    # Make Nextflow write to /tmp which is always writable
+    export HOME=/tmp/fake_home
+
     # Get absolute path for input reads
     READS_ABS=\$(readlink -f $reads)
     # Get absolute path for the current working directory
