@@ -50,11 +50,12 @@ workflow AE_ASSEMBLY_PIPELINE {
     // LOGIC: Fork samplesheet for multiple consumers
     //
     ch_samplesheet
-        .multiMap { meta, reads ->
+        .multiMap { meta, reads, full_meta ->
             ch_symlink:     [ meta, reads ]
             ch_genome_size: [ meta, reads ]
             ch_autocycler:  [ meta, reads ]
             ch_depth:       [ meta, reads ]
+            ch_meta_dump:   [ meta, full_meta ]
         }
         .set { channels }
 
@@ -78,6 +79,17 @@ workflow AE_ASSEMBLY_PIPELINE {
                 }
             }
         }
+
+    //
+    // LOGIC: Save meta to json
+    //
+    channels.ch_meta_dump
+        .subscribe { meta, full_meta ->
+            def outDir = file("${params.outdir}/${meta.id}")
+            outDir.mkdirs()
+            def metaFile = outDir.resolve("meta.json")
+            metaFile.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(full_meta))
+        }
     
     //
     // MODULE: Estimate Genome Size with LRGE
@@ -91,7 +103,6 @@ workflow AE_ASSEMBLY_PIPELINE {
     LRGE.out.size_txt
         .map { meta, txt ->
             def size = txt.toFile().text.trim()
-            log.info "Sample: ${meta.id} | Estimated Genome Size: ${size} bp"
             return [ meta, size ]
         }
         .set { ch_genome_size }

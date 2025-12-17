@@ -64,7 +64,7 @@ workflow PIPELINE_INITIALISATION {
             if (!reads.exists()) {
                 error("Reads file not found: ${row.long_reads}")
             }
-            return [ meta, reads ]
+            return [ meta, reads, row ]
         }
         .set { ch_samplesheet }
 
