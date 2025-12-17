@@ -30,6 +30,14 @@ process LJA {
         --threads $task.cpus \\
         > ${prefix}.log
 
+    if [ ! -s "lja/assembly.fasta" ]; then
+        echo "Error: LJA produced an empty file." >&2
+        exit 1
+    fi
+
+    # Check for duplicate sequence IDs
+    awk '/^>/ { id=substr(\$1,2); if (seen[id]++) { print "Error: LJA produced duplicate header: " id; exit 1 } }' lja/assembly.fasta
+
     gzip -c -n lja/assembly.fasta > ${prefix}.fasta.gz
     gzip -c -n lja/mdbg.gfa > ${prefix}.gfa.gz
 
