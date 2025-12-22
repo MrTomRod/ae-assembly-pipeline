@@ -14,7 +14,6 @@ process MAPQUIK {
     script:
     def args = task.ext.args ?: ''
     def prefix = task.ext.prefix ?: "${assembly.simpleName}"
-    def VERSION = '1.0' // WARN: Version information not provided by tool on CLI.
 
     """
     create_single_line_fasta.py $assembly linearized.fasta.gz
@@ -33,7 +32,7 @@ process MAPQUIK {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        mapquik: $VERSION
+        mapquik: \$(mapquik --version | awk '{print \$2}')
     END_VERSIONS
     """
 }

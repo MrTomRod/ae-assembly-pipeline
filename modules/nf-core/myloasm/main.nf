@@ -33,10 +33,10 @@ process MYLOASM {
         -t $task.cpus \\
         $args
 
-    gzip -c -n myloasm/assembly_primary.fa > ${prefix}.fasta.gz
+    sed '/^>/s/_/ /g' myloasm/assembly_primary.fa | gzip -c -n > ${prefix}.fasta.gz
     gzip -c -n myloasm/final_contig_graph.gfa > ${prefix}.gfa.gz
-    gzip -c -n myloasm/alternate_assemblies/assembly_alternate.fa > ${prefix}_assembly_alternate.fa.gz
-    gzip -c -n myloasm/alternate_assemblies/duplicated_contigs.fa > ${prefix}_duplicated_contigs.fa.gz
+    sed '/^>/s/_/ /g' myloasm/alternate_assemblies/assembly_alternate.fa | gzip -c -n > ${prefix}_assembly_alternate.fa.gz
+    sed '/^>/s/_/ /g' myloasm/alternate_assemblies/duplicated_contigs.fa | gzip -c -n > ${prefix}_duplicated_contigs.fa.gz
     mv myloasm/3-mapping/map_to_unitigs.paf.gz ${prefix}_map_to_unitigs.paf.gz
     mv myloasm/myloasm_*.log ${prefix}.log
 
