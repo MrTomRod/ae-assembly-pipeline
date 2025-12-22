@@ -5,28 +5,22 @@ import sys
 import os
 import argparse
 
+
 def get_input_read_count(yaml_file: str) -> int:
     """Opens subsample.yaml, finds 'input_read_count' line, and returns the integer value."""
-    try:
-        with open(yaml_file, 'r') as f:
-            for line in f:
-                # Find the line starting with 'input_read_count'
-                if line.strip().startswith('input_read_count'):
-                    # Split the line by whitespace and take the last element (the number)
-                    parts = line.split()
-                    if parts and parts[-1].isdigit():
-                        return int(parts[-1])
-                    else:
-                        raise ValueError("Could not parse integer value for 'input_read_count'.")
-        
-        raise ValueError("'input_read_count' not found in the YAML file.")
-        
-    except FileNotFoundError:
-        sys.stderr.write(f"Error: YAML file not found at {yaml_file}\n")
-        sys.exit(1)
-    except Exception as e:
-        sys.stderr.write(f"Error reading {yaml_file}: {e}\n")
-        sys.exit(1)
+    with open(yaml_file, 'r') as f:
+        for line in f:
+            # Find the line starting with 'input_read_count'
+            if line.strip().startswith('input_read_count'):
+                # Split the line by whitespace and take the last element (the number)
+                parts = line.split()
+                if parts and parts[-1].isdigit():
+                    return int(parts[-1])
+                else:
+                    raise ValueError("Could not parse integer value for 'input_read_count'.")
+    
+    raise ValueError("'input_read_count' not found in the YAML file.")    
+
 
 def get_fasta_lengths(fasta_path: str) -> dict:
     """Reads FASTA or FASTA.GZ and maps contig name to length."""
@@ -38,32 +32,29 @@ def get_fasta_lengths(fasta_path: str) -> dict:
     current_name = None
     current_length = 0
 
-    try:
-        # 'rt' for reading text mode, even with gzip.open
-        with opener(fasta_path, 'rt') as f:
-            for line in f:
-                line = line.strip()
-                if line.startswith('>'):
-                    # Save the previous contig's length
-                    if current_name is not None:
-                        contig_lengths[current_name] = current_length
-                    
-                    # Start a new contig: use the text after '>' up to the first space
-                    current_name = line[1:].split()[0]
-                    current_length = 0
-                elif current_name:
-                    # Sequence line: add length, excluding non-base characters
-                    current_length += len(line)
-        
-        # Save the last contig's length
-        if current_name is not None and current_length > 0:
-            contig_lengths[current_name] = current_length
-            
-    except Exception as e:
-        sys.stderr.write(f"Error reading FASTA file {fasta_path}: {e}\n")
-        sys.exit(1)
+
+    # 'rt' for reading text mode, even with gzip.open
+    with opener(fasta_path, 'rt') as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith('>'):
+                # Save the previous contig's length
+                if current_name is not None:
+                    contig_lengths[current_name] = current_length
+                
+                # Start a new contig: use the text after '>' up to the first space
+                current_name = line[1:].split()[0]
+                current_length = 0
+            elif current_name:
+                # Sequence line: add length, excluding non-base characters
+                current_length += len(line)
+    
+    # Save the last contig's length
+    if current_name is not None and current_length > 0:
+        contig_lengths[current_name] = current_length
     
     return contig_lengths
+
 
 def analyze_paf(paf_path: str, contig_lengths: dict) -> tuple:
     """
@@ -74,35 +65,49 @@ def analyze_paf(paf_path: str, contig_lengths: dict) -> tuple:
     contig_coverage = {name: {'total_aligned_bases': 0, 'length': length} 
                        for name, length in contig_lengths.items()}
     mapped_reads = set()
+    mapped_reads_list = list()
     
     # Determine the correct file opener
     opener = gzip.open if paf_path.endswith('.gz') else open
         
-    try:
-        with opener(paf_path, 'rt') as f:
-            for line in f:
-                fields = line.strip().split('\t')
-                
-                # Minimum 12 standard PAF columns expected
-                assert len(fields) == 12
-                
-                # Col 1 (Query name), Col 6 (Target name), Col 11 (Block length)
-                query_name = fields[0]
-                target_name = fields[5]
-                # Col 11 (Alignment Block Length) is 0-indexed at fields[10]
-                block_length = int(fields[10]) 
+    with opener(paf_path, 'rt') as f:
+        for line in f:
+            fields = line.strip().split('\t')
+            
+            # Minimum 12 standard PAF columns expected.
+            # https://github.com/lh3/miniasm/blob/master/PAF.md
+            assert len(fields) == 12, f'Error: PAF file {paf_path} has {len(fields)} columns, expected 12. {line=}'
+            (
+                query_name,
+                query_length,
+                query_start,
+                query_end,
+                relative_strand,
+                target_name,
+                target_length,
+                target_start,
+                target_end,
+                residue_matches,
+                alignment_block_length,  # WARNING: Mapquik populates this with the full contig length!
+                mapping_quality,
+            ) = fields
 
-                # 1. Compute Coverage
-                assert target_name in contig_coverage, f'{target_name=} not in {contig_coverage.keys()}'
-                contig_coverage[target_name]['total_aligned_bases'] += block_length
-                
-                # 2. Count Mapping Reads
-                # Count a read as mapped if it has *any* alignment line
-                mapped_reads.add(query_name)
-                
-    except Exception as e:
-        sys.stderr.write(f"Error reading PAF file {paf_path}: {e}\n")
-        sys.exit(1)
+            # Sanity check: fasta must match
+            assert target_name in contig_lengths, f'{target_name=} not in {contig_lengths.keys()}'
+            assert contig_lengths[target_name] == int(target_length), f'{contig_lengths[target_name]=} != {target_length=}'
+            
+            # Compute Coverage
+            assert target_name in contig_coverage, f'{target_name=} not in {contig_coverage.keys()}'
+            
+            # Avoid 'alignment_block_length' because Mapquik populates it with the full contig length.
+            aligned_len = abs(int(target_end) - int(target_start))
+            contig_coverage[target_name]['total_aligned_bases'] += aligned_len
+            
+            # Count Mapping Reads (using a set to count unique query names)
+            mapped_reads.add(query_name)
+            mapped_reads_list.append(query_name)
+
+    assert len(mapped_reads) == len(mapped_reads_list), f'{len(mapped_reads)=} != {len(mapped_reads_list)=}'
 
     # Finalize average coverage calculation
     coverage_results = {}
@@ -120,6 +125,7 @@ def analyze_paf(paf_path: str, contig_lengths: dict) -> tuple:
         }
         
     return coverage_results, len(mapped_reads)
+
 
 def main(yaml_file, fasta_path, paf_path, output_json):
     """Main function to run the coverage analysis."""
@@ -163,7 +169,6 @@ def main(yaml_file, fasta_path, paf_path, output_json):
     except Exception as e:
         sys.stderr.write(f"Error writing JSON file {output_json}: {e}\n")
         sys.exit(1)
-
 
 
 def cli():

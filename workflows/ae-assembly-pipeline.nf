@@ -230,15 +230,10 @@ workflow AE_ASSEMBLY_PIPELINE {
 
     // Calculate depth using mapquik
     ch_assemblies
-        .combine(ch_subreads_input, by: 0) // [ meta, assembly, reads ]
-        .map { meta, assembly, reads ->
-            [ meta.id, meta, reads, assembly ]
-        }
-        .combine(
-            AUTOCYCLER_SUBSAMPLE.out.yaml.map { meta, yaml -> [ meta.id, yaml ] },
-            by: 0
-        ) // [ id, meta, reads, assembly, yaml ]
-        .map { id, meta, reads, assembly, yaml ->
+        .map { meta, assembly -> [ meta.id, meta, assembly ] }
+        .combine( channels.ch_depth.map { meta, reads -> [ meta.id, reads ] }, by: 0 )
+        .combine( AUTOCYCLER_SUBSAMPLE.out.yaml.map { meta, yaml -> [ meta.id, yaml ] }, by: 0 )
+        .map { id, meta, assembly, reads, yaml ->
             [ meta, reads, assembly, yaml ]
         }
         .set { ch_mapquik_input }

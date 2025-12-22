@@ -17,9 +17,11 @@ process MAPQUIK {
     def VERSION = '1.0' // WARN: Version information not provided by tool on CLI.
 
     """
+    create_single_line_fasta.py $assembly linearized.fasta.gz
+
     mapquik \\
         $reads \\
-        --reference $assembly \\
+        --reference linearized.fasta.gz \\
         --threads $task.cpus \\
         -p ${prefix}
 
