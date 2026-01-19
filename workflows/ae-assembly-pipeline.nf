@@ -30,6 +30,7 @@ include { MINIPOLISH }                                  from '../modules/local/m
 include { RAVEN }                                       from '../modules/nf-core/raven/main'
 include { PLASSEMBLER }                                 from '../modules/local/plassembler/main'
 include { AUTOCYCLER_RUN }                              from '../modules/local/autocycler/run/main'
+include { UPDATE_META }                                 from '../modules/local/update_meta/main'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -81,15 +82,8 @@ workflow AE_ASSEMBLY_PIPELINE {
         }
 
     //
-    // LOGIC: Save meta to json
+    // LOGIC: Save meta to json (done via UPDATE_META process later)
     //
-    channels.ch_meta_dump
-        .subscribe { meta, full_meta ->
-            def outDir = file("${params.outdir}/${meta.id}")
-            outDir.mkdirs()
-            def metaFile = outDir.resolve("meta.json")
-            metaFile.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(full_meta))
-        }
     
     //
     // MODULE: Estimate Genome Size with LRGE
@@ -127,8 +121,26 @@ workflow AE_ASSEMBLY_PIPELINE {
              
              SYLPH_ADD_TAXID ( SYLPH_PROFILE.out.profile_out, SYLPH_PREPARE_DB.out.db )
              ch_versions = ch_versions.mix(SYLPH_ADD_TAXID.out.versions)
+
+             ch_sylph_for_meta = SYLPH_ADD_TAXID.out.profile_with_taxid
+                 .map { meta, tsv -> [ meta.id, tsv ] }
+         } else {
+             ch_sylph_for_meta = Channel.empty()
          }
+    } else {
+        ch_sylph_for_meta = Channel.empty()
     }
+
+    //
+    // Update and Save meta.json
+    //
+    channels.ch_meta_dump
+        .map { meta, full_meta -> [ meta.id, meta, full_meta ] }
+        .join(ch_sylph_for_meta, remainder: true)
+        .map { id, meta, full_meta, tsv -> [ meta, full_meta, tsv ?: [] ] }
+        .set { ch_meta_update_input }
+
+    UPDATE_META ( ch_meta_update_input )
 
     //
     // PROCESS: Autocycler Subsample
@@ -276,6 +288,16 @@ workflow AE_ASSEMBLY_PIPELINE {
         }
     }
 
+    // Calculate depth using mapquik on final autocycler assemblies
+    ch_mapquik_ac_input = AUTOCYCLER_RUN.out.assembly
+        .map { meta, assembly -> [ meta.id, meta, assembly ] }
+        .join( channels.ch_depth.map { meta, reads -> [ meta.id, reads ] } )
+        .join( AUTOCYCLER_SUBSAMPLE.out.yaml.map { meta, yaml -> [ meta.id, yaml ] } )
+        .map { id, meta, assembly, reads, yaml ->
+            [ meta, reads, assembly, yaml ]
+        }
+    MAPQUIK_AC ( ch_mapquik_ac_input )
+    ch_versions = ch_versions.mix(MAPQUIK_AC.out.versions)
 
     //
     // Collate and save software versions
@@ -305,17 +327,6 @@ workflow AE_ASSEMBLY_PIPELINE {
             sort: true,
             newLine: true
         ).set { ch_collated_versions }
-
-    // Calculate depth using mapquik on final autocycler assemblies
-    ch_mapquik_ac_input = AUTOCYCLER_RUN.out.assembly
-        .map { meta, assembly -> [ meta.id, meta, assembly ] }
-        .join( channels.ch_depth.map { meta, reads -> [ meta.id, reads ] } )
-        .join( AUTOCYCLER_SUBSAMPLE.out.yaml.map { meta, yaml -> [ meta.id, yaml ] } )
-        .map { id, meta, assembly, reads, yaml ->
-            [ meta, reads, assembly, yaml ]
-        }
-    MAPQUIK_AC ( ch_mapquik_ac_input )
-    ch_versions = ch_versions.mix(MAPQUIK_AC.out.versions)
 
 
     emit:
