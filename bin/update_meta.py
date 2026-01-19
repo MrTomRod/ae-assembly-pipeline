@@ -27,16 +27,17 @@ def main():
                 # Get the top hit (first row)
                 top_hit = df.iloc[0]
 
-                # Add requested fields
+                # Add fields
                 meta['sylph_abundance'] = float(top_hit['Taxonomic_abundance'])
                 meta['sylph_coverage'] = float(top_hit['Eff_cov'])
                 meta['sylph_ani'] = float(top_hit['Adjusted_ANI']) if isinstance(top_hit['Adjusted_ANI'], (int, float)) or (isinstance(top_hit['Adjusted_ANI'], str) and top_hit['Adjusted_ANI'].replace('.','',1).isdigit()) else top_hit['Adjusted_ANI']
-                meta['sylph_taxid'] = str(top_hit['ncbi_taxid'])
-                meta['sylph_species'] = str(top_hit['genome_species'])
+                # Most precise taxonomic level
+                meta['sylph_full'] = str(top_hit['ncbi_taxonomy_unfiltered'])
+                meta['sylph_full_taxid'] = str(top_hit['ncbi_taxid'])
+                # Genus or species level
+                meta['sylph_species'] = str(top_hit['ncbi_taxonomy'])
+                meta['sylph_species_taxid'] = str(top_hit['ncbi_species_taxid'])
 
-                # Optional: also add species taxid
-                if 'ncbi_species_taxid' in top_hit:
-                    meta['sylph_species_taxid'] = str(top_hit['ncbi_species_taxid'])
         except Exception as e:
             print(f"Warning: Could not parse Sylph results: {e}", file=sys.stderr)
 
