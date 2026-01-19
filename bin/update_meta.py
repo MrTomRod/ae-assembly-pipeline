@@ -26,14 +26,14 @@ def main():
             if not df.empty:
                 # Get the top hit (first row)
                 top_hit = df.iloc[0]
-                
+
                 # Add requested fields
                 meta['sylph_abundance'] = float(top_hit['Taxonomic_abundance'])
                 meta['sylph_coverage'] = float(top_hit['Eff_cov'])
                 meta['sylph_ani'] = float(top_hit['Adjusted_ANI']) if isinstance(top_hit['Adjusted_ANI'], (int, float)) or (isinstance(top_hit['Adjusted_ANI'], str) and top_hit['Adjusted_ANI'].replace('.','',1).isdigit()) else top_hit['Adjusted_ANI']
                 meta['sylph_taxid'] = str(top_hit['ncbi_taxid'])
                 meta['sylph_species'] = str(top_hit['genome_species'])
-                
+
                 # Optional: also add species taxid
                 if 'ncbi_species_taxid' in top_hit:
                     meta['sylph_species_taxid'] = str(top_hit['ncbi_species_taxid'])

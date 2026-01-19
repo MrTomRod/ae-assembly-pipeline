@@ -17,7 +17,6 @@ process UPDATE_META {
     def meta_json_string = groovy.json.JsonOutput.toJson(full_meta)
     """
     echo '${meta_json_string}' > input_meta.json
-    
     update_meta.py \\
         --meta input_meta.json \\
         ${sylph_tsv ? "--sylph ${sylph_tsv}" : ""} \\
