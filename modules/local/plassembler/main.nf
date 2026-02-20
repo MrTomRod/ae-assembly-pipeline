@@ -26,8 +26,6 @@ process PLASSEMBLER {
     def flye_prefix = prefix.startsWith("plassembler_") ? prefix.replaceFirst(/^plassembler_/, "pflye_") : "pflye_${prefix}"
     
     """
-    # Force re-run for debugging outputs - ensure fresh execution
-    # 2025-12-10: Flattening outputs and renaming flye outputs to pflye_
     plassembler long \\
         --longreads $reads \\
         --outdir plassembler_out \\
